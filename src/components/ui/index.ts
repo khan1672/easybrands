@@ -1,0 +1,1 @@
+export { AppText, type AppTextVariant } from './AppText';

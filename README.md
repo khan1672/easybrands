@@ -1,99 +1,396 @@
-# easybrands
+# EasyBrands — Premium Clothing Brand Mobile App
 
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+A premium fashion shopping experience built with React Native.
 
-# Getting Started
+The goal is not "build screens." The goal is:
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+> **Make discovering, understanding, choosing, and purchasing clothing feel effortless.**
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Design Principles
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| Principle | Meaning |
+|---|---|
+| **Product First** | Clothing imagery is always the visual hero. No excessive UI decoration. |
+| **Confidence Before Conversion** | The product page must answer all 10 purchase questions before the user has to ask. |
+| **One-Handed Usage** | Primary actions must be within comfortable thumb reach. |
+| **Minimal Friction** | No unnecessary alerts, popups, or forced registration before browsing. |
 
-```sh
-# Using npm
-npm start
+---
 
-# OR using Yarn
-yarn start
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | React Native CLI |
+| Language | TypeScript (strict mode) |
+| Navigation | React Navigation |
+| Server State | TanStack Query |
+| Client State | Zustand |
+| Networking | Axios |
+| Forms | React Hook Form + Zod |
+| Animations | react-native-reanimated |
+| Gestures | react-native-gesture-handler |
+| Lists | FlashList |
+| Persistence | MMKV |
+| Secure Storage | iOS Keychain / Android Keystore |
+| Testing | Jest + Detox |
+| Error Monitoring | Sentry |
+| Analytics | Firebase / PostHog / Amplitude |
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/                    # App entry, providers
+│   ├── App.tsx
+│   └── providers/
+│
+├── navigation/             # Navigators
+│   ├── RootNavigator.tsx
+│   ├── AuthNavigator.tsx
+│   └── MainNavigator.tsx
+│
+├── features/               # Feature modules (screen + components + hooks + queries)
+│   ├── auth/
+│   ├── home/
+│   ├── search/
+│   ├── categories/
+│   ├── products/
+│   ├── wishlist/
+│   ├── cart/
+│   ├── checkout/
+│   ├── orders/
+│   ├── profile/
+│   └── recommendations/
+│
+├── components/             # Shared components
+│   ├── ui/                 # AppText, AppButton, AppInput, etc.
+│   ├── product/            # ProductCard, ProductGrid, etc.
+│   ├── forms/              # Form field components
+│   └── feedback/           # EmptyState, ErrorState, Skeleton
+│
+├── services/               # Centralized services
+│   ├── api/                # Axios layer + API functions
+│   ├── analytics/          # Analytics service
+│   ├── storage/            # MMKV wrappers
+│   └── notifications/      # Push notification service
+│
+├── store/                  # Zustand stores
+├── hooks/                  # Shared hooks
+├── theme/                  # Design tokens
+├── utils/                  # Utility functions
+├── types/                  # Shared TypeScript types
+└── assets/                 # Images, fonts, etc.
 ```
 
-## Step 2: Build and run your app
+---
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## Navigation Architecture
 
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```
+RootNavigator
+├── AuthNavigator
+│   ├── Login
+│   ├── Register
+│   └── Forgot Password
+│
+└── MainNavigator (Bottom Tabs)
+    ├── Home
+    ├── Discover
+    ├── Wishlist
+    ├── Bag (Cart)
+    └── Profile
 ```
 
-### iOS
+Product details must be accessible from every surface: Home, Search, Categories, Wishlist, Recently Viewed, Recommendations, Complete the Look.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+---
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Key Data Models
 
-```sh
-bundle install
+### Product
+
+```ts
+type Product = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  compareAtPrice?: number;
+  currency: string;
+  categoryId: string;
+  images: ProductImage[];
+  variants: ProductVariant[];
+  colors: ProductColor[];
+  sizes: ProductSize[];
+  material?: string;
+  fit?: string;
+  rating?: number;
+  reviewCount?: number;
+  inventory: number;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+};
 ```
 
-Then, and every time you update your native dependencies, run:
+### Product Variant
 
-```sh
-bundle exec pod install
+```ts
+type ProductVariant = {
+  id: string;
+  colorId: string;
+  sizeId: string;
+  sku: string;
+  price: number;
+  inventory: number;
+  images: string[];
+};
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+### Cart
 
-```sh
-# Using npm
+```ts
+type CartItem = {
+  productId: string;
+  variantId: string;
+  quantity: number;
+  priceAtAdd: number;
+  currentPrice: number;
+  selectedColor: string;
+  selectedSize: string;
+  image: string;
+};
+```
+
+---
+
+## API Architecture
+
+Base endpoints:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/products` | List products (cursor pagination) |
+| GET | `/products/:id` | Product details |
+| GET | `/products/:id/recommendations` | Related products |
+| GET | `/categories` | Category list |
+| GET | `/search` | Search products |
+| POST | `/wishlist` | Add to wishlist |
+| DELETE | `/wishlist/:id` | Remove from wishlist |
+| GET | `/cart` | Get cart |
+| POST | `/cart/items` | Add to cart |
+| PATCH | `/cart/items/:id` | Update cart item |
+| DELETE | `/cart/items/:id` | Remove from cart |
+| POST | `/checkout` | Start checkout |
+| POST | `/payments` | Process payment |
+| GET | `/orders` | Order history |
+| GET | `/orders/:id` | Order details |
+
+---
+
+## State Management
+
+| State | Tool | Examples |
+|---|---|---|
+| Server State | TanStack Query | Products, categories, reviews, orders, user profile |
+| Client State | Zustand | Cart, wishlist, UI state, onboarding, local filters |
+
+**Rule:** Never put API data in Zustand. Never call Axios from components.
+
+---
+
+## Sprint Plan
+
+### Sprint 1 — Foundation
+
+- Project setup (React Native CLI, TypeScript, paths)
+- Theme system (colors, typography, spacing, radius, shadows)
+- Navigation (Root, Auth, Main tab navigators)
+- API layer (Axios client, interceptors, token injection)
+- State management (TanStack Query provider, Zustand stores)
+- Local persistence (MMKV setup)
+- Analytics service
+- Error monitoring (Sentry)
+- Design system components (AppText, AppButton, AppInput, Skeleton)
+
+### Sprint 2 — Discovery
+
+- Home screen (greeting, search, hero banner, categories, product rows)
+- Category navigation
+- Search (instant, suggestions, history, trending)
+- Product listing (FlashList grid, 2 columns)
+- Filtering (bottom sheet: size, color, price, fit, availability)
+- Sorting (recommended, newest, popular, price, rating)
+- Product cards
+
+### Sprint 3 — Product Experience
+
+- Product details screen
+- Image gallery (swipe, pinch zoom, double tap zoom, full screen, thumbnails)
+- Color selection (updates image, gallery, sizes, inventory)
+- Size selection (visible buttons, out-of-stock strikethrough)
+- Size guide (conversions, measurements, cm/inches, model info)
+- Fit description + model measurements
+- Reviews (fit/quality/comfort ratings, customer photos)
+- Wishlist (optimistic UI, haptic feedback)
+
+### Sprint 4 — Purchase
+
+- Cart / Bag screen
+- Save for later
+- Checkout flow (linear: Delivery → Shipping → Payment → Review → Success)
+- Guest checkout
+- Address form with validation
+- Shipping options
+- Payment (Stripe / Apple Pay / Google Pay)
+- Promo code
+- Order confirmation
+- Order success screen
+
+### Sprint 5 — Account & Orders
+
+- Profile screen
+- Order history
+- Order tracking (timeline UI)
+- Saved addresses
+- Payment methods
+- Size profile (preferred fit, favorite colors, usual size)
+- Notifications preferences
+
+### Sprint 6 — Optimization
+
+- Analytics full funnel implementation
+- Performance audit (60 FPS, cold start, re-renders)
+- API caching strategy (staleTime, gcTime per data type)
+- Offline handling (cached data, retry, offline indicator)
+- Error states (every screen)
+- Accessibility audit (labels, contrast, touch targets, screen readers)
+- E2E tests (Detox critical path)
+- Crash monitoring verification
+
+### Sprint 7 — Intelligence
+
+- Size recommendation (height, weight, fit preference → recommended size)
+- Personalized home screen
+- Complete the Look (outfit recommendations)
+- Recently viewed
+- Smart recommendations (behavioral signals)
+
+### Sprint 8 — Advanced AI
+
+- AI Style Assistant
+- AI Outfit Builder (occasion, color, budget → product combination)
+- Visual search (image upload → similar products)
+- Advanced recommendation engine (user profile + product attributes + behavior + purchase history)
+
+---
+
+## MVP Scope
+
+The following ships in the first release:
+
+- Splash screen
+- Onboarding (3 screens max)
+- Guest browsing + guest cart
+- Authentication (email/password, social)
+- Home (hero, categories, new arrivals, trending)
+- Categories
+- Search (instant, suggestions, history)
+- Product listing (grid, filter, sort)
+- Product details (gallery, zoom, color, size, size guide, fit, reviews)
+- Wishlist
+- Cart / Bag
+- Checkout (address, shipping, payment, promo, confirmation)
+- Order history + tracking
+- Profile
+- Push notifications
+- Analytics
+- Crash reporting (Sentry)
+
+---
+
+## Definition of Done
+
+Every screen must satisfy:
+
+```
+✓ Responsive layout
+✓ TypeScript-safe (no any, no errors)
+✓ Accessible (labels, roles, contrast)
+✓ Loading state (skeleton preferred)
+✓ Empty state with CTA
+✓ Error state with retry
+✓ Offline consideration
+✓ API integration via service layer
+✓ Analytics events
+✓ Navigation (deep linking where applicable)
+✓ Performance tested
+✓ Dark mode support (if enabled)
+✓ Localization-ready (no hardcoded strings)
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 26 (React Native 0.87 requires Node `^22.13 || ^24.3 || >= 26`; see `.nvmrc`)
+- JDK 17+
+- Android Studio / Android SDK
+- Xcode >= 15 (iOS — full Xcode, not just Command Line Tools)
+- Ruby (for CocoaPods)
+
+> **No magic needed:** the default Homebrew `node` (>= 26) satisfies React Native's engine requirement.
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Install iOS pods
+cd ios && pod install && cd ..
+
+# Run iOS (requires full Xcode)
 npm run ios
 
-# OR using Yarn
-yarn ios
+# Run Android
+npm run android
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Scripts
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```bash
+npm run start       # Start Metro bundler
+npm run ios         # Run iOS
+npm run android     # Run Android
+npm run test        # Run unit tests
+npm run lint        # Lint code
+npm run typecheck   # Type check (tsc --noEmit)
+npm run format      # Format with Prettier
+```
 
-## Step 3: Modify your app
+---
 
-Now that you have successfully run the app, let's make changes!
+## Coding Standards
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+See [AGENTS.md](./AGENTS.md) for the full developer rules and conventions.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+Key rules:
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- TypeScript strict mode always
+- Never use `any`
+- Never hardcode colors/spacing/fonts
+- Never call Axios from UI components
+- Never use dropdowns for size selection
+- Always show skeleton loaders (not spinners)
+- Always show actionable error states
+- Always support guest browsing
+- Always track analytics events
