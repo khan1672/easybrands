@@ -1,0 +1,17 @@
+export const strings = {
+  brandName: 'EASYBRANDS',
+  homeTitle: 'Home',
+  searchPlaceholder: 'Search products',
+  searchAccessibilityLabel: 'Search products',
+  shopByCategory: 'Shop by Category',
+  newArrivals: 'New Arrivals',
+  newArrivalsLabel: 'NEW',
+  discountBadge: 'OFF',
+  ratingSymbol: '★',
+  errorTitle: "We couldn't load your feed.",
+  errorMessage: 'Check your connection and try again.',
+  errorCta: 'TRY AGAIN',
+  emptyTitle: 'Nothing here yet',
+  emptyMessage: 'New arrivals are on the way.',
+  emptyCta: 'REFRESH',
+};

@@ -21,3 +21,16 @@ jest.mock('react-native-keychain', () => ({
   getGenericPassword: jest.fn(async () => undefined),
   resetGenericPassword: jest.fn(async () => true),
 }));
+
+jest.mock('react-native-worklets', () =>
+  require('react-native-worklets/lib/module/mock.js'),
+);
+
+jest.mock('@components/feedback/Skeleton', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    Skeleton: props => React.createElement(View, props),
+  };
+});
