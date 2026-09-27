@@ -44,6 +44,12 @@ export const typography: Record<string, TextStyle> = {
     fontWeight: '600',
     letterSpacing: 0.5,
   },
+  buttonMicro: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
   buttonSmall: {
     fontSize: 14,
     lineHeight: 18,

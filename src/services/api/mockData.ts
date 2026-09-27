@@ -35,10 +35,12 @@ const product = (
     colors?: string[];
     isNew?: boolean;
     alt?: string;
+    brandName?: string;
   } = {},
 ): Product => ({
   id,
   name,
+  brandName: opts.brandName ?? 'EasyBrands',
   slug: id,
   price,
   compareAtPrice: opts.compareAtPrice,

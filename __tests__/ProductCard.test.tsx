@@ -15,6 +15,7 @@ type RenderedNode = ReactTestRenderer.ReactTestRendererJSON | string | null;
 const baseProduct: Product = {
   id: 'p1',
   name: 'Cotton Fitted Shirt',
+  brandName: 'HSY',
   slug: 'cotton-fitted-shirt',
   price: 2450,
   currency: 'PKR',
@@ -79,6 +80,49 @@ describe('ProductCard images', () => {
     const images = renderer.root.findAllByType(Image);
     expect(images).toHaveLength(1);
     expect(images[0].props.source).toEqual({ uri: 'https://cdn.example.com/real.jpg' });
+  });
+});
+
+describe('ProductCard brand', () => {
+  const textOf = (renderer: Renderer): string =>
+    collectText(renderer.toJSON() as RenderedNode | RenderedNode[]).join(' ');
+
+  // Brands sell near-identical product names, so the card has to say which
+  // brand it is.
+  it('shows the brand name above the product name', async () => {
+    const renderer = await renderCard({ ...baseProduct, brandName: 'Gul Ahmed' });
+    const text = textOf(renderer);
+
+    expect(text).toContain('Gul Ahmed');
+  });
+
+  it('includes the brand in the accessibility label', async () => {
+    const renderer = await renderCard({ ...baseProduct, brandName: 'Maria B' });
+    const button = renderer.root.findAll(node => node.props?.accessibilityRole === 'button')[0];
+
+    expect(button.props.accessibilityLabel).toContain('Maria B');
+    expect(button.props.accessibilityLabel).toContain('Cotton Fitted Shirt');
+  });
+
+  it('omits the brand row when the source document had no brand', async () => {
+    const renderer = await renderCard({ ...baseProduct, brandName: '' });
+    const text = textOf(renderer);
+
+    expect(text).not.toContain('HSY');
+    expect(text).toContain('Cotton Fitted Shirt');
+  });
+});
+
+describe('ProductCard ratings', () => {
+  // Every scraped document has no rating, so the card used to render a
+  // meaningless "0.0 (0)" under every product.
+  it('does not render a rating or review count', async () => {
+    const renderer = await renderCard({ ...baseProduct, rating: 4.8, reviewCount: 120 });
+    const text = collectText(renderer.toJSON() as RenderedNode | RenderedNode[]).join(' ');
+
+    expect(text).not.toContain(strings.ratingSymbol);
+    expect(text).not.toContain('4.8');
+    expect(text).not.toContain('120');
   });
 });
 

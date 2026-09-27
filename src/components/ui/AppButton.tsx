@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, ViewStyle } from 'react-native';
-import { AppText } from './AppText';
+import { AppText, type AppTextVariant } from './AppText';
 import { colors } from '@theme/colors';
 import { radius } from '@theme/radius';
 import { spacing } from '@theme/spacing';
@@ -14,6 +14,11 @@ interface AppButtonProps {
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  /**
+   * Label size. Defaults to `buttonSmall`; use `buttonMicro` where the button
+   * sits in a constrained row, such as a bottom-sheet footer.
+   */
+  labelVariant?: AppTextVariant;
 }
 
 const variantBackground = (variant: AppButtonVariant): string => {
@@ -45,6 +50,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   disabled = false,
   style,
   accessibilityLabel,
+  labelVariant = 'buttonSmall',
 }) => {
   return (
     <Pressable
@@ -61,7 +67,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
         style,
       ]}
     >
-      <AppText variant="buttonSmall" color={variantText(variant)}>
+      <AppText variant={labelVariant} color={variantText(variant)}>
         {label}
       </AppText>
     </Pressable>

@@ -31,12 +31,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const spokenPrice = priceKnown
     ? formatCurrency(product.price, product.currency)
     : strings.priceUnavailable;
+  // Several brands sell near-identical product names, so the brand is part of
+  // how a card is identified, both visually and to a screen reader.
+  const spokenLabel = [product.brandName, product.name, spokenPrice]
+    .filter(part => part !== '')
+    .join(', ');
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? `${product.name}, ${spokenPrice}`}
+      accessibilityLabel={accessibilityLabel ?? spokenLabel}
       style={({ pressed }) => [styles.root, pressed && styles.pressed]}
     >
       <View style={styles.imageContainer}>
@@ -63,14 +68,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         ) : null}
       </View>
       <View style={styles.info}>
+        {product.brandName !== '' ? (
+          <AppText variant="label" color={colors.textSecondary} numberOfLines={1}>
+            {product.brandName}
+          </AppText>
+        ) : null}
         <AppText variant="bodySmall" numberOfLines={2}>
           {product.name}
         </AppText>
-        <View style={styles.ratingRow}>
-          <AppText variant="caption" color={colors.textSecondary}>
-            {strings.ratingSymbol} {product.rating.toFixed(1)} ({product.reviewCount})
-          </AppText>
-        </View>
         <View style={styles.priceRow}>
           {priceKnown ? (
             <>
@@ -134,9 +139,6 @@ const styles = StyleSheet.create({
   info: {
     marginTop: spacing.sm,
     paddingHorizontal: spacing.xs,
-  },
-  ratingRow: {
-    marginTop: spacing.xs,
   },
   priceRow: {
     flexDirection: 'row',

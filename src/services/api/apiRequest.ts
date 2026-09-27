@@ -1,6 +1,6 @@
 import type { AxiosError, AxiosRequestConfig, Method } from 'axios';
 
-import { apiClient, LAN_API_BASE_URL, USE_MOCK_DATA } from './apiClient';
+import { apiClient, LAN_API_BASE_URL, USE_MOCK_DATA, rotateApiBaseUrl } from './apiClient';
 import { apiLogger } from './apiLogger';
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
@@ -159,7 +159,7 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiReques
     ...(config.body !== undefined ? { data: config.body } : {}),
   };
 
-  try {
+  const runAttempt = async (): Promise<ApiRequestResult<T>> => {
     const response = await apiClient.request<T>({ url: config.url, method, ...axiosConfig });
     const durationMs = Date.now() - startedAt;
 
@@ -179,20 +179,42 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiReques
       durationMs,
       headers: headersToRecord(response.headers),
     };
+  };
+
+  // A network-level failure usually means the Mac moved to a new DHCP address
+  // rather than the endpoint being wrong. Move to the next candidate host and
+  // retry once before reporting failure, so the app recovers without a rebuild.
+  let lastError: ApiError | null = null;
+  try {
+    return await runAttempt();
   } catch (error) {
-    const durationMs = Date.now() - startedAt;
-    const apiError = toApiError(error, { method, url: config.url, durationMs });
+    lastError = toApiError(error, { method, url: config.url, durationMs: Date.now() - startedAt });
 
-    apiLogger.logError({
-      method,
-      url: label,
-      durationMs,
-      status: apiError.status,
-      statusText: apiError.statusText,
-      error: { message: apiError.message, code: apiError.code, details: apiError.details },
-    });
+    if (lastError.isNetworkError && rotateApiBaseUrl()) {
+      lastError = null;
+      try {
+        return await runAttempt();
+      } catch (retryError) {
+        lastError = toApiError(retryError, {
+          method,
+          url: config.url,
+          durationMs: Date.now() - startedAt,
+        });
+      }
+    }
 
-    throw apiError;
+    throw lastError;
+  } finally {
+    if (lastError) {
+      apiLogger.logError({
+        method,
+        url: label,
+        durationMs: Date.now() - startedAt,
+        status: lastError.status,
+        statusText: lastError.statusText,
+        error: { message: lastError.message, code: lastError.code, details: lastError.details },
+      });
+    }
   }
 };
 

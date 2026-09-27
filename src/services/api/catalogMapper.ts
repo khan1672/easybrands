@@ -52,6 +52,7 @@ export const toProduct = (raw: unknown): Product | null => {
   return {
     id: slug,
     name: String(d.title),
+    brandName: brand,
     slug,
     price,
     ...(compareAt !== undefined ? { compareAtPrice: compareAt } : {}),
@@ -59,8 +60,10 @@ export const toProduct = (raw: unknown): Product | null => {
     categoryId: String(d.category ?? ''),
     images,
     colors: d.colors ?? [],
-    rating: Number(d.rating ?? 0),
-    reviewCount: Number(d.reviewCount ?? 0),
+    ...(Number.isFinite(Number(d.rating)) && d.rating !== undefined ? { rating: Number(d.rating) } : {}),
+    ...(Number.isFinite(Number(d.reviewCount)) && d.reviewCount !== undefined
+      ? { reviewCount: Number(d.reviewCount) }
+      : {}),
     isNew: Boolean(d.isNew),
   };
 };

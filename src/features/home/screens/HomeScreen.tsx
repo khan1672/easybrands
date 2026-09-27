@@ -1,6 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppText } from '@components/ui';
 import { ProductCard } from '@components/product';
 import { EmptyState, ErrorState, Skeleton } from '@components/feedback';
@@ -13,13 +15,28 @@ import { colors } from '@theme/colors';
 import { spacing } from '@theme/spacing';
 import { dimensions } from '@theme/dimensions';
 import { strings } from '@utils/strings';
+import type { RootStackParamList } from '@navigation/RootNavigator';
 import { Category } from '@typings/category';
 import { Product } from '@typings/product';
 
-const HomeSkeleton: React.FC = () => (
-  <View style={styles.root}>
-    <HomeHeader />
-    <View style={styles.skeletonBody}>
+const HomeSkeleton: React.FC<{ topInset: number; bottomInset: number }> = ({
+  topInset,
+  bottomInset,
+}) => {
+  const insetStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        header: { paddingTop: topInset },
+        body: { paddingBottom: bottomInset },
+      }),
+    [topInset, bottomInset],
+  );
+  return (
+    <View style={styles.root}>
+      <View style={insetStyles.header}>
+        <HomeHeader />
+      </View>
+      <View style={[styles.skeletonBody, insetStyles.body]}>
       <Skeleton style={styles.skeletonHero} />
       <View style={styles.skeletonGrid}>
         {Array.from({ length: 6 }, (_, index) => (
@@ -34,23 +51,49 @@ const HomeSkeleton: React.FC = () => (
       </View>
     </View>
   </View>
-);
+  );
+};
 
-const HomeErrorState: React.FC<{ onRetry: () => void }> = ({ onRetry }) => (
-  <View style={styles.root}>
-    <HomeHeader />
-    <ErrorState
-      title={strings.errorTitle}
-      message={strings.errorMessage}
-      ctaLabel={strings.errorCta}
-      onRetry={onRetry}
-    />
-  </View>
-);
+const HomeErrorState: React.FC<{ onRetry: () => void; topInset: number }> = ({
+  onRetry,
+  topInset,
+}) => {
+  const insetStyles = useMemo(
+    () => StyleSheet.create({ header: { paddingTop: topInset } }),
+    [topInset],
+  );
+  return (
+    <View style={styles.root}>
+      <View style={insetStyles.header}>
+        <HomeHeader />
+      </View>
+      <ErrorState
+        title={strings.errorTitle}
+        message={strings.errorMessage}
+        ctaLabel={strings.errorCta}
+        onRetry={onRetry}
+      />
+    </View>
+  );
+};
 
-export const HomeScreen: React.FC = () => {
+type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   const { hero, categories, products, isLoading, isError, refetchAll } = useHomeFeed();
   const hasTrackedHome = useRef(false);
+  // Home renders with headerShown: false, so it is responsible for its own top
+  // inset (status bar / notch) as well as the bottom one. Read before the early
+  // returns below to keep the hook order stable.
+  const insets = useSafeAreaInsets();
+  const insetStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        header: { paddingTop: insets.top },
+        listContent: { paddingBottom: spacing.xxxl + insets.bottom },
+      }),
+    [insets.top, insets.bottom],
+  );
 
   useEffect(() => {
     if (hasTrackedHome.current) {
@@ -61,11 +104,11 @@ export const HomeScreen: React.FC = () => {
   }, []);
 
   if (isLoading) {
-    return <HomeSkeleton />;
+    return <HomeSkeleton topInset={insets.top} bottomInset={insets.bottom} />;
   }
 
   if (isError || hero === undefined || categories === undefined || products === undefined) {
-    return <HomeErrorState onRetry={refetchAll} />;
+    return <HomeErrorState onRetry={refetchAll} topInset={insets.top} />;
   }
 
   const handleProductPress = (product: Product): void => {
@@ -79,6 +122,7 @@ export const HomeScreen: React.FC = () => {
 
   const handleCategoryPress = (category: Category): void => {
     track('category_viewed', { category: category.name, category_id: category.id, source: 'home' });
+    navigation.navigate('CategoryProducts', { category: category.name, title: category.name });
   };
 
   const handleHeroCtaPress = (): void => {
@@ -87,7 +131,9 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <HomeHeader />
+      <View style={insetStyles.header}>
+        <HomeHeader />
+      </View>
       <FlashList<Product>
         data={products}
         numColumns={2}
@@ -119,7 +165,7 @@ export const HomeScreen: React.FC = () => {
             onCtaPress={refetchAll}
           />
         }
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, insetStyles.listContent]}
         showsVerticalScrollIndicator={false}
       />
     </View>

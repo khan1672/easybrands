@@ -13,6 +13,7 @@ export type AppTextVariant =
   | 'caption'
   | 'button'
   | 'buttonSmall'
+  | 'buttonMicro'
   | 'label';
 
 interface AppTextProps {

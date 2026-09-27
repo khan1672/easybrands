@@ -26,11 +26,7 @@ jest.mock('react-native-worklets', () =>
   require('react-native-worklets/lib/module/mock.js'),
 );
 
-jest.mock('@components/feedback/Skeleton', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return {
-    __esModule: true,
-    Skeleton: props => React.createElement(View, props),
-  };
-});
+// react-native-reanimated is stubbed via the manual mock in
+// __mocks__/react-native-reanimated.js, which Jest applies automatically to node
+// modules. No jest.mock() call is needed (and the real package must never be
+// required here, or it throws while initialising its native module).
