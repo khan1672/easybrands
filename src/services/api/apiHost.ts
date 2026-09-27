@@ -2,10 +2,16 @@
  * Which host should the API client talk to?
  *
  * The backend runs on the development Mac, whose address is DHCP-assigned and
- * has changed repeatedly during this project. Hardcoding it broke every request
- * each time, so the address is derived from the Metro dev server the bundle was
- * loaded from: Metro always runs on the same machine as the API, so its host is
- * the machine's current address, whatever DHCP handed out today.
+ * has changed repeatedly during this project, including onto a different subnet
+ * entirely. Hardcoding it broke every request each time, so the address is
+ * derived from the Metro dev server the bundle was loaded from: Metro always
+ * runs on the same machine as the API, so its host is the machine's current
+ * address, whatever DHCP handed out today.
+ *
+ * There is deliberately no hardcoded LAN fallback. A stale address does not
+ * refuse the connection, it hangs, so every candidate would burn the full
+ * request timeout before the next one was tried. A release build has to supply
+ * EXPO_PUBLIC_API_URL instead.
  */
 
 const API_PORT = 8787;
@@ -15,8 +21,6 @@ const API_PATH = '/api/v1';
 export const ANDROID_EMULATOR_HOST = '10.0.2.2';
 /** iOS simulator and web share the host's network stack. */
 export const LOOPBACK_HOSTS = ['127.0.0.1', 'localhost'] as const;
-/** Last address seen by hand, only used if the dev server host is unavailable. */
-export const LAST_KNOWN_LAN_HOST = '192.168.1.17';
 
 /**
  * Host and port of the dev server that served the JS bundle, or null when the
@@ -69,7 +73,6 @@ export const buildApiBaseUrlCandidates = ({
   };
 
   add(devServerHost);
-  add(LAST_KNOWN_LAN_HOST);
   add(ANDROID_EMULATOR_HOST);
   for (const loopback of LOOPBACK_HOSTS) {
     add(loopback);

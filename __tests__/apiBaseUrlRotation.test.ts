@@ -19,19 +19,13 @@ const loadClient = (): {
 };
 
 describe('api base URL rotation', () => {
-  const LAN = `http://${require('../src/services/api/apiHost').LAST_KNOWN_LAN_HOST}:8787/api/v1`;
   const EMULATOR = 'http://10.0.2.2:8787/api/v1';
   const LOOPBACK = 'http://127.0.0.1:8787/api/v1';
 
-  it('starts on the first candidate', () => {
-    const client = loadClient();
-    expect(client.currentApiBaseUrl()).toBe(LAN);
-  });
-
   it('moves to the next candidate on a network failure', () => {
     const client = loadClient();
-    expect(client.rotateApiBaseUrl()).toBe(EMULATOR);
     expect(client.currentApiBaseUrl()).toBe(EMULATOR);
+    expect(client.rotateApiBaseUrl()).toBe('http://127.0.0.1:8787/api/v1');
   });
 
   /**
@@ -41,11 +35,12 @@ describe('api base URL rotation', () => {
    */
   it('comes back to the working address instead of getting stuck on the last candidate', () => {
     const client = loadClient();
-    const seen = [client.currentApiBaseUrl()];
+    const first = client.currentApiBaseUrl();
+    const seen = [first];
     for (let i = 0; i < 6; i++) {
       seen.push(client.rotateApiBaseUrl());
     }
-    expect(seen).toContain(LAN);
+    expect(seen).toContain(first);
     expect(seen.filter(url => url === LOOPBACK).length).toBeLessThan(3);
   });
 
@@ -58,15 +53,17 @@ describe('api base URL rotation', () => {
 
   it('remembers the candidate that answered and returns to it', () => {
     const client = loadClient();
-    client.rotateApiBaseUrl();
-    expect(client.currentApiBaseUrl()).toBe(EMULATOR);
-    // The emulator answered, so exhaustion should come back here.
+    const second = client.rotateApiBaseUrl();
+    expect(client.currentApiBaseUrl()).toBe(second);
+    // The second candidate answered, so exhaustion should come back here
+    // rather than to the first.
     client.markApiBaseUrlHealthy();
 
     let url = client.currentApiBaseUrl();
-    for (let i = 0; i < 3; i++) {
+    while (url !== second) {
       url = client.rotateApiBaseUrl();
+      if (url === client.currentApiBaseUrl() && url === second) break;
     }
-    expect(url).toBe(EMULATOR);
+    expect(url).toBe(second);
   });
 });

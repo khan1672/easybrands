@@ -4,7 +4,6 @@
 
 import {
   ANDROID_EMULATOR_HOST,
-  LAST_KNOWN_LAN_HOST,
   buildApiBaseUrlCandidates,
   parseDevServerHost,
 } from '../src/services/api/apiHost';
@@ -54,20 +53,21 @@ describe('buildApiBaseUrlCandidates', () => {
     expect(candidates).toContain('http://localhost:' + PORT);
   });
 
-  it('falls back to the last known address when there is no dev server', () => {
+  /**
+   * A stale LAN address used to be the first fallback, but the host did not
+   * refuse it, it hung, so each request burned the full timeout.
+   */
+  it('carries no hardcoded LAN address, only hosts known to be reachable', () => {
     const candidates = buildApiBaseUrlCandidates({ devServerHost: null });
-    expect(candidates[0]).toBe(`http://${LAST_KNOWN_LAN_HOST}:${PORT}`);
+    expect(candidates).toEqual([
+      `http://${ANDROID_EMULATOR_HOST}:${PORT}`,
+      'http://127.0.0.1:' + PORT,
+      'http://localhost:' + PORT,
+    ]);
   });
 
-  it('does not repeat a host that is already in the list', () => {
-    const candidates = buildApiBaseUrlCandidates({
-      devServerHost: LAST_KNOWN_LAN_HOST,
-    });
-    expect(candidates.filter(url => url === `http://${LAST_KNOWN_LAN_HOST}:${PORT}`)).toHaveLength(1);
-  });
-
-  it('never duplicates a host across the fallback list', () => {
-    const candidates = buildApiBaseUrlCandidates({ devServerHost: '192.168.1.42' });
+  it('never repeats a host across the fallback list', () => {
+    const candidates = buildApiBaseUrlCandidates({ devServerHost: '10.0.2.2' });
     expect(new Set(candidates).size).toBe(candidates.length);
   });
 

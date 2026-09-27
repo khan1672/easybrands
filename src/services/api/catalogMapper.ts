@@ -84,6 +84,7 @@ export const toProduct = (raw: unknown): Product | null => {
     ...(typeof d.website === 'string' && d.website.trim() !== ''
       ? { brandWebsite: d.website.trim() }
       : {}),
+    ...(handle !== '' ? { handle } : {}),
     colors: d.colors ?? [],
     ...(Number.isFinite(Number(d.rating)) && d.rating !== undefined ? { rating: Number(d.rating) } : {}),
     ...(Number.isFinite(Number(d.reviewCount)) && d.reviewCount !== undefined

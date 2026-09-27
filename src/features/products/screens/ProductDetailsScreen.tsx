@@ -9,6 +9,7 @@ import { SizeSelector } from '@features/products/components/SizeSelector';
 import { useProductDetails } from '@features/products/queries/useProductDetails';
 import { track } from '@services/analytics';
 import { openMerchantPage } from '@services/browser/merchantBrowser';
+import { resolveProductPageUrl } from '@features/products/utils/productLinks';
 import { colors } from '@theme/colors';
 import { radius } from '@theme/radius';
 import { spacing } from '@theme/spacing';
@@ -67,8 +68,14 @@ export const ProductDetailsScreen: React.FC<Props> = ({ route }) => {
   );
 
   const handleOpenBrand = useCallback(async (): Promise<void> => {
-    const url = product?.productUrl ?? product?.brandWebsite;
-    if (!url) {
+    // Resolved to a product page, never a storefront homepage: a shopper who
+    // taps this is looking for this garment, not the brand's front page.
+    const link = resolveProductPageUrl({
+      productUrl: product?.productUrl,
+      brandWebsite: product?.brandWebsite,
+      handle: product?.handle,
+    });
+    if (!link) {
       Alert.alert(strings.errorTitle, strings.productBrandSiteMissing);
       return;
     }
@@ -80,7 +87,7 @@ export const ProductDetailsScreen: React.FC<Props> = ({ route }) => {
     }
     // A custom tab keeps the shopper in the app; the system browser is only a
     // fallback when no custom-tab host is available.
-    const result = await openMerchantPage(url);
+    const result = await openMerchantPage(link.url);
     if (result.opened) {
       track('product_image_viewed', {
         product_id: product?.id,

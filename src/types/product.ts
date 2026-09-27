@@ -47,6 +47,8 @@ export interface Product {
   productUrl?: string;
   /** The brand's storefront root. */
   brandWebsite?: string;
+  /** Storefront slug, e.g. 'rust-tights-tr-22-50'. Used to build the product page. */
+  handle?: string;
   /**
    * Reviews are not present in the scraped catalogue, so these are absent
    * rather than 0. Optional on purpose: a required number would render as a
