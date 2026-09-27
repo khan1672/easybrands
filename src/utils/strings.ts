@@ -7,6 +7,7 @@ export const strings = {
   newArrivals: 'New Arrivals',
   newArrivalsLabel: 'NEW',
   discountBadge: 'OFF',
+  priceUnavailable: 'Price on request',
   ratingSymbol: '★',
   errorTitle: "We couldn't load your feed.",
   errorMessage: 'Check your connection and try again.',

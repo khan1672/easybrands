@@ -13,7 +13,10 @@ export const useHomeFeed = () => {
   });
 
   const categoriesQuery = useQuery({
-    queryKey: ['categories', 'home'],
+    // Keyed by source: these used to be brand tiles, so the old cache must not
+    // be reused now that the rail is built from product categories. No cap --
+    // the rail scrolls, so it shows every category the API returns.
+    queryKey: ['categories', 'by-product', 'home'],
     queryFn: getCategories,
     staleTime: CATEGORIES_STALE_TIME,
   });

@@ -5,7 +5,8 @@ import { colors } from '@theme/colors';
 import { dimensions } from '@theme/dimensions';
 import { radius } from '@theme/radius';
 import { spacing } from '@theme/spacing';
-import { formatCurrency, formatDiscountPercent } from '@utils/formatCurrency';
+import { formatCurrency, formatDiscountPercent, hasValidPrice } from '@utils/formatCurrency';
+import { getPrimaryImage } from '@utils/getPrimaryImage';
 import { strings } from '@utils/strings';
 import { Product } from '@typings/product';
 
@@ -20,24 +21,32 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onPress,
   accessibilityLabel,
 }) => {
+  const priceKnown = hasValidPrice(product.price);
+  // Scraper data can omit imagery entirely, so never index `images` directly.
+  const primaryImage = getPrimaryImage(product);
   const discountPercent =
-    product.compareAtPrice !== undefined
+    priceKnown && product.compareAtPrice !== undefined
       ? formatDiscountPercent(product.price, product.compareAtPrice)
       : 0;
+  const spokenPrice = priceKnown
+    ? formatCurrency(product.price, product.currency)
+    : strings.priceUnavailable;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? `${product.name}, ${formatCurrency(product.price)}`}
+      accessibilityLabel={accessibilityLabel ?? `${product.name}, ${spokenPrice}`}
       style={({ pressed }) => [styles.root, pressed && styles.pressed]}
     >
       <View style={styles.imageContainer}>
-        <AppImage
-          uri={product.images[0].url}
-          style={styles.image}
-          accessibilityLabel={product.images[0].alt}
-        />
+        {primaryImage ? (
+          <AppImage
+            uri={primaryImage.url}
+            style={styles.image}
+            accessibilityLabel={primaryImage.alt}
+          />
+        ) : null}
         {discountPercent > 0 ? (
           <View style={styles.discountBadge}>
             <AppText variant="caption" color={colors.textInverse}>
@@ -63,16 +72,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </AppText>
         </View>
         <View style={styles.priceRow}>
-          <AppText variant="buttonSmall">{formatCurrency(product.price)}</AppText>
-          {product.compareAtPrice !== undefined ? (
-            <AppText
-              variant="caption"
-              color={colors.textSecondary}
-              style={styles.compareAt}
-            >
-              {formatCurrency(product.compareAtPrice)}
+          {priceKnown ? (
+            <>
+              <AppText variant="buttonSmall">{formatCurrency(product.price, product.currency)}</AppText>
+              {product.compareAtPrice !== undefined ? (
+                <AppText
+                  variant="caption"
+                  color={colors.textSecondary}
+                  style={styles.compareAt}
+                >
+                  {formatCurrency(product.compareAtPrice, product.currency)}
+                </AppText>
+              ) : null}
+            </>
+          ) : (
+            <AppText variant="caption" color={colors.textSecondary}>
+              {strings.priceUnavailable}
             </AppText>
-          ) : null}
+          )}
         </View>
       </View>
     </Pressable>
