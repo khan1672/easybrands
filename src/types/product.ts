@@ -3,6 +3,18 @@ export interface ProductImage {
   alt: string;
 }
 
+/**
+ * A purchasable size. The scraped catalogue has one variant per size with its
+ * own SKU, price and stock flag; there is no separate colour axis, so a variant
+ * is a size and nothing else.
+ */
+export interface ProductVariant {
+  title: string;
+  sku?: string;
+  price?: number;
+  available: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -22,6 +34,19 @@ export interface Product {
   categoryId: string;
   images: ProductImage[];
   colors: string[];
+  /**
+   * Product-level stock. List endpoints return in-stock products only, so this
+   * is true there; the detail document reports the real flag.
+   */
+  available: boolean;
+  /** Sizes, in the order the merchant listed them. */
+  variants: ProductVariant[];
+  /** Merchant description text. Plain text from the scrape. */
+  description?: string;
+  /** Absolute URL of the product on the brand's own storefront. */
+  productUrl?: string;
+  /** The brand's storefront root. */
+  brandWebsite?: string;
   /**
    * Reviews are not present in the scraped catalogue, so these are absent
    * rather than 0. Optional on purpose: a required number would render as a

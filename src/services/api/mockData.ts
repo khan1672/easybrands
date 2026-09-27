@@ -1,6 +1,6 @@
 import { Category } from '@typings/category';
 import { HeroBanner } from '@typings/home';
-import { Product } from '@typings/product';
+import { Product, ProductVariant } from '@typings/product';
 
 const img = (id: string, width = 800): string =>
   `https://images.unsplash.com/photo-${id}?q=80&w=${width}&auto=format&fit=crop`;
@@ -36,6 +36,7 @@ const product = (
     isNew?: boolean;
     alt?: string;
     brandName?: string;
+    variants?: ProductVariant[];
   } = {},
 ): Product => ({
   id,
@@ -51,6 +52,8 @@ const product = (
     { url: img(photoId, 400), alt: opts.alt ?? `${name} on model` },
   ],
   colors: opts.colors ?? ['#171717'],
+  available: true,
+  variants: opts.variants ?? [],
   rating,
   reviewCount,
   isNew: opts.isNew ?? false,

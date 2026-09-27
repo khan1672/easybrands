@@ -54,7 +54,7 @@ const CategorySkeleton: React.FC<{ bottomInset: number }> = ({ bottomInset }) =>
  * applied selection is part of the query key, changing a filter refetches from
  * page 1 instead of mixing results from two different result sets.
  */
-export const CategoryProductsScreen: React.FC<Props> = ({ route }) => {
+export const CategoryProductsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { category, title } = route.params;
   // The top inset is handled by the native stack header; the list only needs
   // the bottom one so the last row clears the gesture bar.
@@ -145,8 +145,9 @@ export const CategoryProductsScreen: React.FC<Props> = ({ route }) => {
         price: product.price,
         source: 'category',
       });
+      navigation.navigate('ProductDetails', { slug: product.id, source: 'category' });
     },
-    [category],
+    [category, navigation],
   );
 
   if (isLoading) {

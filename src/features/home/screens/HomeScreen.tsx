@@ -118,6 +118,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       price: product.price,
       source: 'home',
     });
+    navigation.navigate('ProductDetails', { slug: product.id, source: 'home' });
   };
 
   const handleCategoryPress = (category: Category): void => {

@@ -22,6 +22,8 @@ const baseProduct: Product = {
   categoryId: 'c1',
   images: [{ url: 'https://cdn.example.com/shirt.jpg', alt: 'Blue cotton shirt on model' }],
   colors: ['Blue'],
+  available: true,
+  variants: [],
   rating: 4.5,
   reviewCount: 24,
   isNew: false,

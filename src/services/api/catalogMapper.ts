@@ -1,4 +1,4 @@
-import type { Product, ProductImage } from '@typings/product';
+import type { Product, ProductImage, ProductVariant } from '@typings/product';
 
 /**
  * The API serves MongoDB documents straight from the easybrands.products
@@ -16,6 +16,8 @@ export interface CatalogDoc {
   product_url?: string;
   primary_image?: string;
   images?: { src?: string; url?: string; alt?: string; position?: number }[];
+  variants?: { title?: string; sku?: string; price?: number; available?: boolean }[];
+  description?: string;
   price?: number;
   compare_at_price?: number;
   compareAtPrice?: number;
@@ -42,6 +44,17 @@ export const toProduct = (raw: unknown): Product | null => {
     images.push({ url: d.primary_image, alt: d.title });
   }
 
+  // One variant per size; a variant with no title cannot be shown as a button.
+  const variants: ProductVariant[] = (d.variants ?? [])
+    .map(v => ({
+      title: String(v.title ?? '').trim(),
+      ...(typeof v.sku === 'string' && v.sku.trim() !== '' ? { sku: v.sku.trim() } : {}),
+      ...(Number.isFinite(Number(v.price)) ? { price: Number(v.price) } : {}),
+      // Absent stock data must not read as "in stock".
+      available: v.available === true,
+    }))
+    .filter(v => v.title !== '');
+
   const price = Number(d.price ?? 0);
   const compareRaw = d.compare_at_price ?? d.compareAtPrice;
   const compareAt =
@@ -59,6 +72,18 @@ export const toProduct = (raw: unknown): Product | null => {
     currency: d.currency ?? 'PKR',
     categoryId: String(d.category ?? ''),
     images,
+    // A missing flag is not the same as "in stock".
+    available: d.available === true,
+    variants,
+    ...(typeof d.description === 'string' && d.description.trim() !== ''
+      ? { description: d.description.trim() }
+      : {}),
+    ...(typeof d.product_url === 'string' && d.product_url.trim() !== ''
+      ? { productUrl: d.product_url.trim() }
+      : {}),
+    ...(typeof d.website === 'string' && d.website.trim() !== ''
+      ? { brandWebsite: d.website.trim() }
+      : {}),
     colors: d.colors ?? [],
     ...(Number.isFinite(Number(d.rating)) && d.rating !== undefined ? { rating: Number(d.rating) } : {}),
     ...(Number.isFinite(Number(d.reviewCount)) && d.reviewCount !== undefined
