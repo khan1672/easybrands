@@ -1,6 +1,12 @@
 import type { AxiosError, AxiosRequestConfig, Method } from 'axios';
 
-import { apiClient, LAN_API_BASE_URL, USE_MOCK_DATA, rotateApiBaseUrl } from './apiClient';
+import {
+  apiClient,
+  LAN_API_BASE_URL,
+  USE_MOCK_DATA,
+  markApiBaseUrlHealthy,
+  rotateApiBaseUrl,
+} from './apiClient';
 import { apiLogger } from './apiLogger';
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
@@ -186,14 +192,21 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiReques
   // retry once before reporting failure, so the app recovers without a rebuild.
   let lastError: ApiError | null = null;
   try {
-    return await runAttempt();
+    const result = await runAttempt();
+    // Remember the candidate that answered, so a later failure rotates away
+    // from it and then comes back to it rather than to a dead address.
+    markApiBaseUrlHealthy();
+    return result;
   } catch (error) {
     lastError = toApiError(error, { method, url: config.url, durationMs: Date.now() - startedAt });
 
-    if (lastError.isNetworkError && rotateApiBaseUrl()) {
+    if (lastError.isNetworkError) {
+      rotateApiBaseUrl();
       lastError = null;
       try {
-        return await runAttempt();
+        const result = await runAttempt();
+        markApiBaseUrlHealthy();
+        return result;
       } catch (retryError) {
         lastError = toApiError(retryError, {
           method,

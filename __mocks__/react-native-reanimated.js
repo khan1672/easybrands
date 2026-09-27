@@ -24,6 +24,19 @@ const useSharedValue = initial => {
 /** Resolves the worklet immediately so static styles can be asserted. */
 const useAnimatedStyle = factory => factory();
 
+/**
+ * GestureDetector registers a handler with this on the UI thread. The native
+ * event receiver is mocked out, so it is never invoked; returning a stable
+ * no-op is enough for the detector to mount.
+ */
+const useEvent = () => {
+  const ref = React.useRef(null);
+  if (ref.current === null) {
+    ref.current = () => undefined;
+  }
+  return ref.current;
+};
+
 const identity = value => value;
 const withTiming = toValue => identity(toValue);
 const withDelay = (_, toValue) => identity(toValue);
@@ -63,6 +76,7 @@ module.exports = {
   useAnimatedStyle,
   useAnimatedRef: () => React.createRef(),
   useDerivedValue: factory => ({ value: factory() }),
+  useEvent,
   useSharedValue,
   withDelay,
   withRepeat,

@@ -1,12 +1,23 @@
 import React, { useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+  type FlatListProps,
+} from 'react-native';
 import { AppImage, AppText } from '@components/ui';
+import { ImageViewer } from './ImageViewer';
 import { colors } from '@theme/colors';
 import { dimensions } from '@theme/dimensions';
 import { radius } from '@theme/radius';
 import { spacing } from '@theme/spacing';
 import { strings } from '@utils/strings';
 import type { ProductImage } from '@typings/product';
+
+/** Derived from the list's own props so the shape can never drift. */
+type ViewableItemsChanged = NonNullable<FlatListProps<ProductImage>['onViewableItemsChanged']>;
 
 interface ProductGalleryProps {
   images: ProductImage[];
@@ -23,7 +34,29 @@ interface ProductGalleryProps {
 export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productName }) => {
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+  const [viewerVisible, setViewerVisible] = useState(false);
   const listRef = useRef<FlatList<ProductImage>>(null);
+
+  /**
+   * The page is whichever item is actually on screen, reported by the list
+   * itself. The previous version derived it from
+   * Math.round(contentOffset.x / width), which disagrees with what the shopper
+   * sees whenever the offset has not fully settled: the counter would jump to
+   * the next photo while the current one was still filling the screen.
+   */
+  // Created once. A new identity on every render makes the list tear down and
+  // re-register its viewability config on each pass.
+  const [handleViewableItemsChanged] = useState<ViewableItemsChanged>(() => {
+    return ({ viewableItems }: Parameters<ViewableItemsChanged>[0]) => {
+      const next = viewableItems[0]?.index;
+      if (typeof next === 'number') {
+        setIndex(current => (current === next ? current : next));
+      }
+    };
+  });
+  // A new object identity on every render makes the list re-register the
+  // callback, so it is created once.
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
 
   if (images.length === 0) {
     return (
@@ -54,19 +87,23 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productN
             listRef.current?.scrollToOffset({ offset: index * nextWidth, animated: false });
           }
         }}
-        onMomentumScrollEnd={event => {
-          const next = Math.round(event.nativeEvent.contentOffset.x / width);
-          setIndex(next);
-        }}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         keyExtractor={item => item.url}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={{ width }}>
-            <AppImage
-              uri={item.url}
-              style={[styles.image, { aspectRatio: dimensions.productImageAspectRatio }]}
-              accessibilityLabel={item.alt || `${productName} image`}
-            />
+            <Pressable
+              onPress={() => setViewerVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.alt || productName}. ${strings.productImageFullScreen}`}
+            >
+              <AppImage
+                uri={item.url}
+                style={[styles.image, { aspectRatio: dimensions.productImageAspectRatio }]}
+                accessibilityLabel={item.alt || `${productName} image`}
+              />
+            </Pressable>
           </View>
         )}
       />
@@ -102,6 +139,20 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productN
           )}
         />
       ) : null}
+
+      <ImageViewer
+        visible={viewerVisible}
+        images={images}
+        index={index}
+        productName={productName}
+        onClose={() => setViewerVisible(false)}
+        // Paging inside the viewer moves the inline pager with it, so closing
+        // the viewer never snaps back to a different photo.
+        onIndexChange={next => {
+          setIndex(next);
+          scrollTo(next);
+        }}
+      />
     </View>
   );
 };

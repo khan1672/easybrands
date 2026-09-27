@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppButton, AppText } from '@components/ui';
@@ -8,6 +8,7 @@ import { ProductGallery } from '@features/products/components/ProductGallery';
 import { SizeSelector } from '@features/products/components/SizeSelector';
 import { useProductDetails } from '@features/products/queries/useProductDetails';
 import { track } from '@services/analytics';
+import { openMerchantPage } from '@services/browser/merchantBrowser';
 import { colors } from '@theme/colors';
 import { radius } from '@theme/radius';
 import { spacing } from '@theme/spacing';
@@ -77,12 +78,17 @@ export const ProductDetailsScreen: React.FC<Props> = ({ route }) => {
       Alert.alert(strings.productSize, strings.productSelectSizeFirst);
       return;
     }
-    try {
-      await Linking.openURL(url);
-      track('product_image_viewed', { product_id: product?.id, source: source ?? 'unknown' });
-    } catch {
-      Alert.alert(strings.errorTitle, strings.productBrandSiteMissing);
+    // A custom tab keeps the shopper in the app; the system browser is only a
+    // fallback when no custom-tab host is available.
+    const result = await openMerchantPage(url);
+    if (result.opened) {
+      track('product_image_viewed', {
+        product_id: product?.id,
+        source: source ?? 'unknown',
+      });
+      return;
     }
+    Alert.alert(strings.errorTitle, strings.productBrandSiteMissing);
   }, [product, selectedVariant, source]);
 
   if (isLoading) {

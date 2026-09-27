@@ -1,60 +1,90 @@
 import axios from 'axios';
+import { NativeModules } from 'react-native';
+import { buildApiBaseUrlCandidates, parseDevServerHost } from './apiHost';
 
 /**
  * The API is the MongoDB-backed backend running on this Mac.
  *
- * The Mac's address is DHCP-assigned and has already changed once during
- * development, which broke every request until the bundle was rebuilt. Rather
- * than hardcoding one address and rediscovering that problem each time, the
- * client keeps an ordered list of candidates and rotates to the next one when a
- * request fails at the network level. An emulator, a physical device on the same
- * Wi-Fi, and a localhost-only setup are therefore all covered without any
- * rebuild.
+ * The Mac's address is DHCP-assigned and has changed more than once during
+ * development, which broke every request until the bundle was rebuilt. The
+ * client therefore keeps an ordered list of candidates and rotates on a
+ * network-level failure, and takes the first candidate from the Metro dev
+ * server that served the bundle, so the machine's current address is used
+ * without anything being hardcoded.
  *
  * Set EXPO_PUBLIC_API_URL to pin a single address and skip rotation entirely.
  */
 const expoEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 
-const API_PORT = 8787;
-const API_PATH = '/api/v1';
-/** Most recently observed Mac address; the first candidate. */
-const DEFAULT_LAN_HOST = '192.168.1.16';
-/** The Android emulator maps 10.0.2.2 to the host machine's loopback. */
-const ANDROID_EMULATOR_HOST = '10.0.2.2';
-/** iOS simulator and web share the host's network stack. */
-const LOOPBACK_HOSTS = ['127.0.0.1', 'localhost'];
+interface SourceCodeModule {
+  getConstants?: () => { scriptURL?: string };
+  scriptURL?: string;
+}
 
-const buildCandidates = (): string[] => {
-  const override = expoEnv?.EXPO_PUBLIC_API_URL;
-  if (override) {
-    return [override];
+/**
+ * The URL of the bundle the app is running. Absent in release builds, and
+ * possibly in this runtime, so every access is guarded.
+ */
+const readScriptUrl = (): string | null => {
+  try {
+    const sourceCode = (NativeModules as Record<string, unknown>).SourceCode as
+      | SourceCodeModule
+      | undefined;
+    return sourceCode?.getConstants?.().scriptURL ?? sourceCode?.scriptURL ?? null;
+  } catch {
+    return null;
   }
-  return [DEFAULT_LAN_HOST, ANDROID_EMULATOR_HOST, ...LOOPBACK_HOSTS].map(
-    host => `http://${host}:${API_PORT}${API_PATH}`,
-  );
 };
 
-const API_BASE_URL_CANDIDATES = buildCandidates();
+const devServerHost = parseDevServerHost(readScriptUrl());
+
+const API_BASE_URL_CANDIDATES = buildApiBaseUrlCandidates({
+  override: expoEnv?.EXPO_PUBLIC_API_URL,
+  devServerHost,
+});
 
 export const LAN_API_BASE_URL = API_BASE_URL_CANDIDATES[0];
 
 let activeBaseUrlIndex = 0;
+/**
+ * The candidate that last answered. Rotation returns here once the list is
+ * exhausted, so a single bad address cannot strand the app on an unreachable
+ * host for the rest of the session.
+ */
+let lastHealthyIndex = 0;
 
 export const currentApiBaseUrl = (): string => API_BASE_URL_CANDIDATES[activeBaseUrlIndex];
 
+/** Records that the current candidate works, so it is preferred from now on. */
+export const markApiBaseUrlHealthy = (): void => {
+  lastHealthyIndex = activeBaseUrlIndex;
+};
+
+const applyBaseUrl = (index: number): string => {
+  activeBaseUrlIndex = index;
+  const url = API_BASE_URL_CANDIDATES[index];
+  apiClient.defaults.baseURL = url;
+  return url;
+};
+
 /**
  * Point the client at the next candidate after a network-level failure.
- * Returns null once the list is exhausted, so callers can stop retrying.
+ *
+ * After the last candidate it returns to the one that last worked instead of
+ * giving up, because the usual cause is the Mac changing address, and that
+ * resolves itself once the correct candidate is retried.
  */
-export const rotateApiBaseUrl = (): string | null => {
+export const rotateApiBaseUrl = (): string => {
   const next = activeBaseUrlIndex + 1;
-  if (next >= API_BASE_URL_CANDIDATES.length) {
-    return null;
+  if (next < API_BASE_URL_CANDIDATES.length) {
+    const url = applyBaseUrl(next);
+    console.log(`[api] network unreachable, switching base URL to: ${url}`);
+    return url;
   }
-  activeBaseUrlIndex = next;
-  const url = API_BASE_URL_CANDIDATES[next];
-  apiClient.defaults.baseURL = url;
-  console.log(`[api] network unreachable, switching base URL to: ${url}`);
+  const url = applyBaseUrl(lastHealthyIndex);
+  console.log(
+    `[api] network unreachable on every candidate, returning to last working base URL: ${url}`,
+  );
   return url;
 };
 
@@ -75,7 +105,11 @@ export const USE_MOCK_DATA = expoEnv?.EXPO_PUBLIC_USE_MOCK_DATA === 'true';
 console.log(
   `[api] base URL: ${LAN_API_BASE_URL} (mock data: ${
     USE_MOCK_DATA ? 'on' : 'off'
-  })\n[api] fallback candidates: ${API_BASE_URL_CANDIDATES.slice(1).join(', ') || 'none'}`,
+  })` +
+    `\n[api] host source: ${
+      devServerHost ? `metro dev server (${devServerHost})` : 'no dev server host, using last known address'
+    }` +
+    `\n[api] fallback candidates: ${API_BASE_URL_CANDIDATES.slice(1).join(', ') || 'none'}`,
 );
 
 export const apiClient = axios.create({

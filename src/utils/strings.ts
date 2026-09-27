@@ -56,4 +56,6 @@ export const strings = {
   productOpeningBrand: 'Opening brand site',
   productBrandSiteMissing: 'No brand site link available',
   productSelectSizeFirst: 'Select an available size first',
+  productZoomHint: 'Pinch or double tap to zoom',
+  productImageFullScreen: 'View image full screen',
 };

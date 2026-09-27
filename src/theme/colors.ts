@@ -14,6 +14,12 @@ export const colors = {
   error: '#C53030',
   warning: '#D69E2E',
   overlay: 'rgba(0, 0, 0, 0.5)',
+  /**
+   * Backdrop behind a full-screen product photo. Near-opaque so the imagery is
+   * the hero, and deliberately darker than `overlay`, which stays translucent
+   * for scrims that must show the content behind them.
+   */
+  viewerBackdrop: 'rgba(0, 0, 0, 0.92)',
   skeleton: '#E8E6E1',
   skeletonHighlight: '#F5F3F0',
 };
