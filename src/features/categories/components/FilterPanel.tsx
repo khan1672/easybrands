@@ -281,6 +281,9 @@ const styles = StyleSheet.create({
   },
   brandScroll: {
     maxHeight: 220,
+    // Yields space to the sheet body so the footer's Apply action stays
+    // reachable when the OS text size is large.
+    flexShrink: 1,
   },
   brandList: {
     gap: spacing.sm,

@@ -116,7 +116,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chip: {
-    height: dimensions.filterChipHeight,
+    // minHeight, not height: at a large OS text size the label's line box grows
+    // past a fixed 32pt and would be cropped. The chip keeps its resting size
+    // and only grows when the user asks for bigger text.
+    minHeight: dimensions.filterChipHeight,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,

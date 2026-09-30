@@ -41,6 +41,16 @@ const renderRail = async (
 
 // A Pressable also produces a host View that carries the same accessibility
 // props, so match on the node that actually owns the press handler.
+const flattenChipStyle = (
+  chip: ReactTestRenderer.ReactTestInstance,
+): Record<string, number> => {
+  const raw = chip.props.style;
+  return StyleSheet.flatten(typeof raw === 'function' ? raw({ pressed: false }) : raw) as Record<
+    string,
+    number
+  >;
+};
+
 const tabs = (renderer: Renderer): ReactTestRenderer.ReactTestInstance[] =>
   renderer.root.findAll(
     (node) =>
@@ -128,15 +138,20 @@ describe('BrandCategoryRail', () => {
     // later trims the height again, this catches the lost tap area.
     const { renderer } = await renderRail();
     const chip = tabs(renderer)[1];
-    // Pressable takes a style callback, so resolve it the way the chip does.
-    const raw = chip.props.style;
-    const style = StyleSheet.flatten(
-      typeof raw === 'function' ? raw({ pressed: false }) : raw,
-    );
+    const style = flattenChipStyle(chip);
     const hitSlop = chip.props.hitSlop as { top: number; bottom: number };
-    const tapHeight = style.height + hitSlop.top + hitSlop.bottom;
-    expect(style.height).toBe(dimensions.filterChipHeight);
+    const tapHeight = style.minHeight + hitSlop.top + hitSlop.bottom;
+    expect(style.minHeight).toBe(dimensions.filterChipHeight);
     expect(tapHeight).toBeGreaterThanOrEqual(dimensions.minTouchTarget);
+  });
+
+  it('can grow instead of cropping the label at a large OS text size', async () => {
+    // A fixed height would clip the label once the platform scales the text, so
+    // the chip is sized with minHeight and only ever grows.
+    const { renderer } = await renderRail();
+    const style = flattenChipStyle(tabs(renderer)[1]);
+    expect(style.height).toBeUndefined();
+    expect(style.minHeight).toBeDefined();
   });
 
   it('renders nothing when the brand has no categories', async () => {

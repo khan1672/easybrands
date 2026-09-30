@@ -309,8 +309,10 @@ const styles = StyleSheet.create({
     minHeight: 36,
   },
   badge: {
+    // Grows with the text instead of clipping it; a two-digit count needs the
+    // extra width and a large OS text size needs the extra height.
     minWidth: 20,
-    height: 20,
+    minHeight: 20,
     borderRadius: radius.full,
     backgroundColor: colors.accent,
     alignItems: 'center',

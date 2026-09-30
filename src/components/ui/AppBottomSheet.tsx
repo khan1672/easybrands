@@ -166,6 +166,10 @@ const styles = StyleSheet.create({
   body: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+    // The panel is capped at maxHeight, so the body has to be the part that
+    // yields space. Without this the footer gets pushed out of the sheet and
+    // the primary action becomes unreachable at large text sizes.
+    flexShrink: 1,
   },
   footer: {
     paddingHorizontal: spacing.lg,

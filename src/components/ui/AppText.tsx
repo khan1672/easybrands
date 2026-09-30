@@ -1,7 +1,7 @@
-import React from 'react';
-import { StyleProp, Text, TextStyle } from 'react-native';
+import React, { useMemo } from 'react';
+import { StyleProp, Text, TextStyle, useWindowDimensions } from 'react-native';
 import { colors } from '@theme/colors';
-import { typography } from '@theme/typography';
+import { scaleTextStyle, typography } from '@theme/typography';
 
 export type AppTextVariant =
   | 'display'
@@ -33,9 +33,18 @@ export const AppText: React.FC<AppTextProps> = ({
   accessibilityLabel,
   children,
 }) => {
+  // `fontScale` follows the OS text size setting, and `useWindowDimensions`
+  // re-renders when it changes, so a user raising the text size sees every
+  // label grow without a restart.
+  const { fontScale } = useWindowDimensions();
+
+  // Only the line box and letter spacing are scaled here: the platform already
+  // scales the glyphs, so scaling fontSize too would apply the setting twice.
+  const type = useMemo(() => scaleTextStyle(typography[variant], fontScale), [variant, fontScale]);
+
   return (
     <Text
-      style={[typography[variant], { color }, style]}
+      style={[type, { color }, style]}
       numberOfLines={numberOfLines}
       accessibilityLabel={accessibilityLabel}
       allowFontScaling
