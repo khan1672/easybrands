@@ -19,10 +19,11 @@ import type { RootStackParamList } from '@navigation/RootNavigator';
 import { Category } from '@typings/category';
 import { Product } from '@typings/product';
 
-const HomeSkeleton: React.FC<{ topInset: number; bottomInset: number }> = ({
-  topInset,
-  bottomInset,
-}) => {
+const HomeSkeleton: React.FC<{
+  topInset: number;
+  bottomInset: number;
+  onSearchPress: () => void;
+}> = ({ topInset, bottomInset, onSearchPress }) => {
   const insetStyles = useMemo(
     () =>
       StyleSheet.create({
@@ -34,7 +35,7 @@ const HomeSkeleton: React.FC<{ topInset: number; bottomInset: number }> = ({
   return (
     <View style={styles.root}>
       <View style={insetStyles.header}>
-        <HomeHeader />
+        <HomeHeader onSearchPress={onSearchPress} />
       </View>
       <View style={[styles.skeletonBody, insetStyles.body]}>
       <Skeleton style={styles.skeletonHero} />
@@ -54,10 +55,11 @@ const HomeSkeleton: React.FC<{ topInset: number; bottomInset: number }> = ({
   );
 };
 
-const HomeErrorState: React.FC<{ onRetry: () => void; topInset: number }> = ({
-  onRetry,
-  topInset,
-}) => {
+const HomeErrorState: React.FC<{
+  onRetry: () => void;
+  topInset: number;
+  onSearchPress: () => void;
+}> = ({ onRetry, topInset, onSearchPress }) => {
   const insetStyles = useMemo(
     () => StyleSheet.create({ header: { paddingTop: topInset } }),
     [topInset],
@@ -65,7 +67,7 @@ const HomeErrorState: React.FC<{ onRetry: () => void; topInset: number }> = ({
   return (
     <View style={styles.root}>
       <View style={insetStyles.header}>
-        <HomeHeader />
+        <HomeHeader onSearchPress={onSearchPress} />
       </View>
       <ErrorState
         title={strings.errorTitle}
@@ -95,6 +97,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     [insets.top, insets.bottom],
   );
 
+  const handleSearchPress = (): void => {
+    navigation.navigate('Search');
+  };
+
   useEffect(() => {
     if (hasTrackedHome.current) {
       return;
@@ -104,11 +110,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   }, []);
 
   if (isLoading) {
-    return <HomeSkeleton topInset={insets.top} bottomInset={insets.bottom} />;
+    return (
+      <HomeSkeleton
+        topInset={insets.top}
+        bottomInset={insets.bottom}
+        onSearchPress={handleSearchPress}
+      />
+    );
   }
 
   if (isError || hero === undefined || categories === undefined || products === undefined) {
-    return <HomeErrorState onRetry={refetchAll} topInset={insets.top} />;
+    return (
+      <HomeErrorState
+        onRetry={refetchAll}
+        topInset={insets.top}
+        onSearchPress={handleSearchPress}
+      />
+    );
   }
 
   const handleProductPress = (product: Product): void => {
@@ -133,7 +151,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   return (
     <View style={styles.root}>
       <View style={insetStyles.header}>
-        <HomeHeader />
+        <HomeHeader onSearchPress={handleSearchPress} />
       </View>
       <FlashList<Product>
         data={products}

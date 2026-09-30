@@ -82,15 +82,60 @@ export const getProductFacets = async (params: ProductListParams = {}): Promise<
   }
 };
 
-export const searchProducts = async (q: string): Promise<Product[]> => {
+export const DEFAULT_SEARCH_PAGE_SIZE = 20;
+
+/** Mirrors the backend tokenizer so mock mode filters the same way the API does. */
+const tokenizeQuery = (q: string): string[] => q.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+
+const matchesSearchTerms = (product: Product, terms: string[]): boolean => {
+  const haystack = [product.brandName, product.name, product.categoryId, product.description]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return terms.every(term => haystack.includes(term));
+};
+
+/**
+ * One page of search results, ranked server-side by relevance across product
+ * name, brand name, tags, category and description. The backend requires every
+ * term to match somewhere, so a query can span fields.
+ */
+export const searchProductPage = async (params: {
+  q: string;
+  page?: number;
+  limit?: number;
+}): Promise<ProductPage> => {
+  const page = params.page ?? 1;
+  const limit = params.limit ?? DEFAULT_SEARCH_PAGE_SIZE;
+  const query: QueryParams = { q: params.q, page, limit };
+
   try {
-    const { data } = await apiGet<unknown>('/products/search', { params: { q } });
-    return readItems(data)
+    const { data } = await apiGet<unknown>('/products/search', { params: query });
+    const items = readItems(data)
       .map(toProduct)
       .filter((p): p is Product => p !== null);
+    const paging = (data as PagingPayload | null)?.paging;
+    return {
+      items,
+      total: paging?.total ?? items.length,
+      page: paging?.page ?? page,
+      limit: paging?.limit ?? limit,
+    };
   } catch (e) {
-    return mockFallback(e, [], 'search');
+    const terms = tokenizeQuery(params.q);
+    const hits = terms.length > 0 ? mockProducts.filter(p => matchesSearchTerms(p, terms)) : [];
+    const offset = (page - 1) * limit;
+    return mockFallback(
+      e,
+      { items: hits.slice(offset, offset + limit), total: hits.length, page, limit },
+      'search',
+    );
   }
+};
+
+export const searchProducts = async (q: string): Promise<Product[]> => {
+  const { items } = await searchProductPage({ q, limit: DEFAULT_SEARCH_PAGE_SIZE });
+  return items;
 };
 
 export const getProductBySlug = async (slug: string): Promise<Product | null> => {

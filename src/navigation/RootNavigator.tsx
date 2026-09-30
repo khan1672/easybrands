@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from '@features/home/screens/HomeScreen';
 import { CategoryProductsScreen } from '@features/categories/screens/CategoryProductsScreen';
 import { ProductDetailsScreen } from '@features/products/screens/ProductDetailsScreen';
+import { SearchScreen } from '@features/search/screens/SearchScreen';
 import { colors } from '@theme/colors';
 import { strings } from '@utils/strings';
 
@@ -22,6 +23,7 @@ export type ProductDetailsParams = {
 
 export type RootStackParamList = {
   Main: undefined;
+  Search: undefined;
   CategoryProducts: CategoryProductsParams;
   ProductDetails: ProductDetailsParams;
 };
@@ -32,6 +34,19 @@ export const RootNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={HomeScreen} />
+      <Stack.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          headerShown: true,
+          title: strings.searchTitle,
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { color: colors.textPrimary },
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
       <Stack.Screen
         name="ProductDetails"
         component={ProductDetailsScreen}
