@@ -53,6 +53,22 @@ export const strings = {
   filterMaxPriceA11y: 'Maximum price',
 
   productDetailsTitle: 'Product',
+  productBrandLabel: (brand: string): string => `View all products by ${brand}`,
+  brandTitle: 'Brand',
+  brandProductCount: (total: number): string =>
+    total === 1 ? '1 product in stock' : `${total} products in stock`,
+  brandResultsLabel: (brand: string): string => `Products by ${brand}`,
+  brandEmptyTitle: 'Nothing in stock right now',
+  brandEmptyMessage: 'This brand has no in-stock products at the moment. Check back soon.',
+  brandEmptyCta: 'Go back',
+  brandErrorTitle: "We couldn't load this brand.",
+  brandEndOfResults: "That's everything from this brand.",
+  brandCategoryAll: 'All',
+  brandCategoryLabel: (name: string, count: number): string =>
+    `${name}, ${count} ${count === 1 ? 'product' : 'products'}`,
+  brandCategoryEmptyTitle: 'Nothing in this category',
+  brandCategoryEmptyMessage: 'This brand has nothing in stock in that category. Try another one.',
+  brandCategoryEmptyCta: 'Show all',
   productSize: 'Select size',
   productSizeRequired: 'Select a size to continue',
   productSizeUnavailable: 'out of stock',

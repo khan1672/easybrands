@@ -73,12 +73,20 @@ export const browseProducts = async (params: ProductListParams = {}): Promise<Pr
 export const getProductFacets = async (params: ProductListParams = {}): Promise<ProductFacets> => {
   const query: QueryParams = {
     ...(params.category ? { category: params.category } : {}),
+    // The brand scope is what makes /products/facets return that brand's
+    // categories rather than the whole catalogue's.
+    ...(params.brand ? { brand: params.brand } : {}),
+    ...(params.brands && params.brands.length > 0 ? { brand: params.brands.join(',') } : {}),
   };
   try {
     const { data } = await apiGet<unknown>('/products/facets', { params: query });
     return toFacets(data);
   } catch (e) {
-    return mockFallback(e, { brands: [], price: { min: 0, max: 0 }, total: 0 }, 'product facets');
+    return mockFallback(
+      e,
+      { brands: [], categories: [], price: { min: 0, max: 0 }, total: 0 },
+      'product facets',
+    );
   }
 };
 
@@ -152,6 +160,7 @@ export const getProducts = (): Promise<Product[]> => browseProducts();
 
 interface FacetsPayload {
   brands?: { name?: string; count?: number }[];
+  categories?: { name?: string; slug?: string; count?: number }[];
   price?: { min?: number; max?: number };
   total?: number;
 }
@@ -162,6 +171,15 @@ const toFacets = (raw: unknown): ProductFacets => {
     brands: (d.brands ?? [])
       .map((b) => ({ name: String(b.name ?? '').trim(), count: Number(b.count ?? 0) }))
       .filter((b) => b.name !== ''),
+    categories: (d.categories ?? [])
+      .map((c) => ({
+        name: String(c.name ?? '').trim(),
+        slug: String(c.slug ?? '').trim(),
+        count: Number(c.count ?? 0),
+      }))
+      // A category the API reports with no products cannot be browsed, so it is
+      // dropped rather than shown as a chip that leads to an empty grid.
+      .filter((c) => c.name !== '' && c.count > 0),
     price: { min: Number(d.price?.min ?? 0), max: Number(d.price?.max ?? 0) },
     total: Number(d.total ?? 0),
   };

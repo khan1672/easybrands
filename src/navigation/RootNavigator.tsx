@@ -4,6 +4,7 @@ import { HomeScreen } from '@features/home/screens/HomeScreen';
 import { CategoryProductsScreen } from '@features/categories/screens/CategoryProductsScreen';
 import { ProductDetailsScreen } from '@features/products/screens/ProductDetailsScreen';
 import { SearchScreen } from '@features/search/screens/SearchScreen';
+import { BrandScreen } from '@features/brands/screens/BrandScreen';
 import { colors } from '@theme/colors';
 import { strings } from '@utils/strings';
 
@@ -12,6 +13,13 @@ export type CategoryProductsParams = {
   category: string;
   /** Display title for the header. */
   title: string;
+};
+
+export type BrandParams = {
+  /** The merchant's own brand name, e.g. "HSY" or "J. (Junaid Jamshed)". */
+  brand: string;
+  /** Display title for the header. Defaults to the brand name. */
+  title?: string;
 };
 
 export type ProductDetailsParams = {
@@ -24,6 +32,7 @@ export type ProductDetailsParams = {
 export type RootStackParamList = {
   Main: undefined;
   Search: undefined;
+  Brand: BrandParams;
   CategoryProducts: CategoryProductsParams;
   ProductDetails: ProductDetailsParams;
 };
@@ -46,6 +55,19 @@ export const RootNavigator: React.FC = () => {
           headerTitleStyle: { color: colors.textPrimary },
           contentStyle: { backgroundColor: colors.background },
         }}
+      />
+      <Stack.Screen
+        name="Brand"
+        component={BrandScreen}
+        options={({ route }) => ({
+          headerShown: true,
+          title: route.params.title ?? route.params.brand,
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { color: colors.textPrimary },
+          contentStyle: { backgroundColor: colors.background },
+        })}
       />
       <Stack.Screen
         name="ProductDetails"

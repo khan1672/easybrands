@@ -34,8 +34,17 @@ export interface FacetBrand {
   count: number;
 }
 
+export interface FacetCategory {
+  /** Canonical category name, safe to send back as `?category=`. */
+  name: string;
+  slug: string;
+  count: number;
+}
+
 export interface ProductFacets {
   brands: FacetBrand[];
+  /** Categories available in the requested scope, e.g. one brand's categories. */
+  categories: FacetCategory[];
   price: { min: number; max: number };
   total: number;
 }

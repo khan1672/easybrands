@@ -22,6 +22,7 @@ const facets: ProductFacets = {
     { name: 'HSY', count: 42 },
     { name: 'Gul Ahmed', count: 17 },
   ],
+  categories: [{ name: 'Ready to Wear', slug: 'ready-to-wear', count: 59 }],
   price: { min: 500, max: 295000 },
   total: 59,
 };
@@ -186,7 +187,7 @@ describe('FilterPanel', () => {
   });
 
   it('falls back to a message when facets are unavailable', async () => {
-    const { renderer } = await renderPanel({ facets: { brands: [], price: { min: 0, max: 0 }, total: 0 } });
+    const { renderer } = await renderPanel({ facets: { brands: [], categories: [], price: { min: 0, max: 0 }, total: 0 } });
     expect(textOf(renderer)).toContain(strings.filterBrandsUnavailable);
   });
 });

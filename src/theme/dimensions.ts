@@ -12,4 +12,10 @@ export const dimensions = {
   bannerAspectRatio: 16 / 9,
   thumbnailSize: 64,
   minTouchTarget: 44,
+  /**
+   * Visual height of a filter chip. Deliberately shorter than
+   * `minTouchTarget`: the chip looks compact, and the gap to the 44pt
+   * minimum tap area is made up with `hitSlop` on the Pressable.
+   */
+  filterChipHeight: 32,
 };

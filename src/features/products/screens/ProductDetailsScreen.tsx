@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppButton, AppText } from '@components/ui';
@@ -37,7 +37,7 @@ const DetailSkeleton: React.FC = () => (
  * There is no cart or checkout in the app yet, so the primary action opens the
  * brand site rather than a dead "Add to Bag" button.
  */
-export const ProductDetailsScreen: React.FC<Props> = ({ route }) => {
+export const ProductDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { slug, source } = route.params;
   const insets = useSafeAreaInsets();
   const { data: product, isLoading, isError, refetch } = useProductDetails(slug);
@@ -98,6 +98,15 @@ export const ProductDetailsScreen: React.FC<Props> = ({ route }) => {
     Alert.alert(strings.errorTitle, strings.productBrandSiteMissing);
   }, [product, selectedVariant, source]);
 
+  // The brand name browses the brand's own catalogue inside the app, which is a
+  // different intent from "View on brand site": stay here and keep shopping.
+  const handleBrandPress = useCallback((): void => {
+    if (!product?.brandName) {
+      return;
+    }
+    navigation.navigate('Brand', { brand: product.brandName });
+  }, [navigation, product?.brandName]);
+
   if (isLoading) {
     return (
       <View style={styles.root}>
@@ -141,9 +150,16 @@ export const ProductDetailsScreen: React.FC<Props> = ({ route }) => {
 
         <View style={styles.body}>
           {product.brandName !== '' ? (
-            <AppText variant="label" color={colors.textSecondary}>
-              {product.brandName}
-            </AppText>
+            <Pressable
+              onPress={handleBrandPress}
+              accessibilityRole="button"
+              accessibilityLabel={strings.productBrandLabel(product.brandName)}
+              style={({ pressed }) => [styles.brandLink, pressed && styles.brandLinkPressed]}
+            >
+              <AppText variant="label" color={colors.textSecondary}>
+                {product.brandName}
+              </AppText>
+            </Pressable>
           ) : null}
           <AppText variant="heading3">{product.name}</AppText>
 
@@ -226,6 +242,16 @@ const styles = StyleSheet.create({
   body: {
     padding: spacing.lg,
     gap: spacing.sm,
+  },
+  // Aligns the brand link to the left edge of the body and keeps a 44pt tall
+  // tap target around a single line of label text.
+  brandLink: {
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  brandLinkPressed: {
+    opacity: 0.6,
   },
   priceRow: {
     flexDirection: 'row',
