@@ -101,6 +101,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     navigation.navigate('Search');
   };
 
+  const handleChatPress = (): void => {
+    navigation.navigate('Chat');
+  };
+
   useEffect(() => {
     if (hasTrackedHome.current) {
       return;
@@ -151,7 +155,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
   return (
     <View style={styles.root}>
       <View style={insetStyles.header}>
-        <HomeHeader onSearchPress={handleSearchPress} />
+        <HomeHeader onSearchPress={handleSearchPress} onChatPress={handleChatPress} />
       </View>
       <FlashList<Product>
         data={products}

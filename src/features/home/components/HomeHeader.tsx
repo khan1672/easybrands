@@ -2,20 +2,34 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@components/ui';
 import { colors } from '@theme/colors';
+import { dimensions } from '@theme/dimensions';
 import { radius } from '@theme/radius';
 import { spacing } from '@theme/spacing';
 import { strings } from '@utils/strings';
 
 interface HomeHeaderProps {
   onSearchPress?: () => void;
+  onChatPress?: () => void;
 }
 
-export const HomeHeader: React.FC<HomeHeaderProps> = ({ onSearchPress }) => {
+export const HomeHeader: React.FC<HomeHeaderProps> = ({ onSearchPress, onChatPress }) => {
   return (
     <View style={styles.root}>
-      <AppText variant="label" color={colors.textPrimary} style={styles.brand}>
-        {strings.brandName}
-      </AppText>
+      <View style={styles.topRow}>
+        <AppText variant="label" color={colors.textPrimary} style={styles.brand}>
+          {strings.brandName}
+        </AppText>
+        <Pressable
+          onPress={onChatPress}
+          accessibilityRole="button"
+          accessibilityLabel={strings.chatOpenLabel}
+          style={({ pressed }) => [styles.chatPill, pressed && styles.pressed]}
+        >
+          <AppText variant="label" color={colors.textInverse}>
+            {strings.chatOpenLabel}
+          </AppText>
+        </Pressable>
+      </View>
       <Pressable
         onPress={onSearchPress}
         accessibilityRole="button"
@@ -40,8 +54,22 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
   brand: {
     letterSpacing: 3,
+    flexShrink: 1,
+  },
+  chatPill: {
+    minHeight: dimensions.minTouchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
   },
   searchPill: {
     marginTop: spacing.md,

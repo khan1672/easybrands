@@ -5,6 +5,7 @@ import { CategoryProductsScreen } from '@features/categories/screens/CategoryPro
 import { ProductDetailsScreen } from '@features/products/screens/ProductDetailsScreen';
 import { SearchScreen } from '@features/search/screens/SearchScreen';
 import { BrandScreen } from '@features/brands/screens/BrandScreen';
+import { ChatScreen } from '@features/chat/screens/ChatScreen';
 import { colors } from '@theme/colors';
 import { strings } from '@utils/strings';
 
@@ -32,6 +33,7 @@ export type ProductDetailsParams = {
 export type RootStackParamList = {
   Main: undefined;
   Search: undefined;
+  Chat: undefined;
   Brand: BrandParams;
   CategoryProducts: CategoryProductsParams;
   ProductDetails: ProductDetailsParams;
@@ -75,6 +77,19 @@ export const RootNavigator: React.FC = () => {
         options={{
           headerShown: true,
           title: strings.productDetailsTitle,
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.textPrimary,
+          headerTitleStyle: { color: colors.textPrimary },
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
+      <Stack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          headerShown: true,
+          title: strings.chatTitle,
           headerBackTitle: 'Back',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,
