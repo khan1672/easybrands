@@ -6,4 +6,18 @@
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
     </style>
 
+    <!--
+      Launch theme. Applied only to the activity while it is starting up, so
+      splashscreen.jpeg is the first thing drawn; RN swaps to AppTheme as soon
+      as the JS bundle takes over the window.
+
+      android:windowDisablePreview stops the system falling back to a plain
+      window frame during the cold-start gap between the splash and the
+      bundle, which otherwise flashes the launcher icon alone.
+    -->
+    <style name="AppTheme.Starting" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/launch_splash</item>
+        <item name="android:windowDisablePreview">true</item>
+    </style>
+
 </resources>

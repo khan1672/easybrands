@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launch window background. The solid colour matches the light edge of
+  splashscreen.jpeg so any letterboxing on an unusual aspect ratio blends
+  into the artwork instead of showing a hard seam.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:src="@drawable/splash_image"
+            android:gravity="center" />
+    </item>
+</layer-list>
