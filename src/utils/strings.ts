@@ -1,5 +1,6 @@
 export const strings = {
   brandName: 'EASYBRANDS',
+  splashAccessibilityLabel: 'Easybrands',
   homeTitle: 'Home',
   searchPlaceholder: 'Search products',
   searchAccessibilityLabel: 'Search products',

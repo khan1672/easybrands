@@ -12,6 +12,9 @@ export const dimensions = {
   bannerAspectRatio: 16 / 9,
   thumbnailSize: 64,
   minTouchTarget: 44,
+  /** Splash logo size, derived from the Lottie artboard (260×218). */
+  splashLogoWidth: Math.min(Math.round(width * 0.6), 260),
+  splashLogoAspectRatio: 260 / 218,
   /**
    * Visual height of a filter chip. Deliberately shorter than
    * `minTouchTarget`: the chip looks compact, and the gap to the 44pt

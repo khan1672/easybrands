@@ -78,6 +78,7 @@ module.exports = {
   useDerivedValue: factory => ({ value: factory() }),
   useEvent,
   useSharedValue,
+  useReducedMotion: () => false,
   withDelay,
   withRepeat,
   withSequence,
