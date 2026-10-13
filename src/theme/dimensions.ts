@@ -15,6 +15,8 @@ export const dimensions = {
   /** Splash logo size, derived from the Lottie artboard (260×218). */
   splashLogoWidth: Math.min(Math.round(width * 0.6), 260),
   splashLogoAspectRatio: 260 / 218,
+  /** Header chat button logo, derived from the Lottie artboard (320×320). */
+  chatLogoSize: 56,
   /**
    * Visual height of a filter chip. Deliberately shorter than
    * `minTouchTarget`: the chip looks compact, and the gap to the 44pt

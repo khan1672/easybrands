@@ -88,6 +88,7 @@ export const strings = {
   productImageFullScreen: 'View image full screen',
   chatTitle: 'AI stylist',
   chatOpenLabel: 'Ask AI',
+  chatAskVariation: 'Ask',
   chatPlaceholder: 'What are you looking for today?',
   chatInputLabel: 'Message the AI stylist',
   chatSend: 'Send',
