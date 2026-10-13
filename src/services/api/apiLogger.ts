@@ -31,14 +31,34 @@ export interface ApiLogEntry {
 }
 
 const MAX_ENTRIES = 100;
-const MAX_ARRAY_PREVIEW = 5;
-const MAX_KEYS_PREVIEW = 15;
-const MAX_STRING_LENGTH = 240;
+
+/**
+ * ANSI colours for the console blocks: requests yellow, responses green, errors
+ * red. These are plain escape codes rather than a UI concern, so they are not
+ * theme tokens, and they are only ever emitted while the logger is enabled
+ * (dev builds) — production bundles never carry them.
+ */
+const ANSI_RESET = '\u001b[0m';
+const ANSI = {
+  bold: '\u001b[1m',
+  red: '\u001b[31m',
+  green: '\u001b[32m',
+  yellow: '\u001b[33m',
+} as const;
+
+const paint = (colour: string, text: string): string => `${colour}${text}${ANSI_RESET}`;
 
 const SENSITIVE_KEY = /token|password|passwd|secret|authorization|cookie|api[-_]?key|session|otp|pin/i;
 const REDACTED = '***REDACTED***';
 
-let enabled = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
+/**
+ * Console output is a debug-only affordance. `__DEV__` is `false` (and folded
+ * away) in release builds, so the blocks never print — and `setEnabled` cannot
+ * re-enable them outside debug.
+ */
+export const IS_DEV = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
+
+let enabled = IS_DEV;
 let entries: ApiLogEntry[] = [];
 let sequence = 0;
 const listeners = new Set<() => void>();
@@ -50,83 +70,90 @@ const nextId = (): string => {
   return `${Date.now().toString(36)}-${sequence.toString(36)}`;
 };
 
-const truncateString = (value: string): string =>
-  value.length > MAX_STRING_LENGTH ? `${value.slice(0, MAX_STRING_LENGTH)}… (+${value.length - MAX_STRING_LENGTH} chars)` : value;
-
-/** Never print credentials — replaces sensitive values before logging. */
-const redact = (value: unknown, depth = 0): unknown => {
-  if (value === null || value === undefined) return value;
-  if (typeof value === 'string') return truncateString(value);
-  if (typeof value === 'number' || typeof value === 'boolean') return value;
-  if (depth > 6) return '[deep]';
-
-  if (Array.isArray(value)) {
-    const preview = value.slice(0, MAX_ARRAY_PREVIEW).map((item) => redact(item, depth + 1));
-    return value.length > MAX_ARRAY_PREVIEW
-      ? [...preview, `… +${value.length - MAX_ARRAY_PREVIEW} more items`]
-      : preview;
-  }
-
-  if (typeof value === 'object') {
-    const out: Record<string, unknown> = {};
-    const entriesOfObject = Object.entries(value as Record<string, unknown>);
-    for (const [key, item] of entriesOfObject.slice(0, MAX_KEYS_PREVIEW)) {
-      out[key] = SENSITIVE_KEY.test(key) ? REDACTED : redact(item, depth + 1);
-    }
-    if (entriesOfObject.length > MAX_KEYS_PREVIEW) {
-      out['…'] = `+${entriesOfObject.length - MAX_KEYS_PREVIEW} more keys`;
-    }
-    return out;
-  }
-
-  return String(value);
-};
-
+/**
+ * Pretty-prints the full payload — nothing is truncated, so the console shows
+ * exactly what was sent and received. Credentials are still masked, and a
+ * circular reference degrades to `[circular]` instead of throwing.
+ */
 const stringify = (value: unknown): string => {
   if (value === undefined) return '(none)';
+  const seen = new WeakSet<object>();
   try {
-    return truncateString(JSON.stringify(redact(value), null, 2) ?? String(value));
+    const json = JSON.stringify(
+      value,
+      (key, item) => {
+        if (SENSITIVE_KEY.test(key)) return REDACTED;
+        if (item !== null && typeof item === 'object') {
+          if (seen.has(item)) return '[circular]';
+          seen.add(item);
+        }
+        return item;
+      },
+      2,
+    );
+    return json ?? String(value);
   } catch {
     return '[unserialisable]';
   }
 };
 
+const BANNERS: Record<ApiLogDirection, { title: string; rule: string }> = {
+  request: { title: '--------- API REQUEST ---------', rule: '-------------------------------' },
+  response: { title: '--------- RESPONSE ------------', rule: '------------------------------' },
+  error: { title: '--------- ERROR ------------', rule: '---------------------------' },
+};
+
+const DIRECTION_COLOUR: Record<ApiLogDirection, string> = {
+  request: ANSI.yellow,
+  response: ANSI.green,
+  error: ANSI.red,
+};
+
 const print = (entry: ApiLogEntry): void => {
-  if (!enabled) return;
+  if (!IS_DEV || !enabled) return;
 
-  const target = entry.url;
-  const head =
-    entry.direction === 'request'
-      ? `▶ ${entry.method} ${target}`
-      : entry.direction === 'response'
-        ? `◀ ${entry.status ?? '---'} ${entry.method} ${target} — ${entry.durationMs ?? 0}ms`
-        : `✕ ${entry.method} ${target} — ${entry.error?.message ?? 'failed'}`;
+  const colour = DIRECTION_COLOUR[entry.direction];
+  const banner = BANNERS[entry.direction];
+  const status = entry.status !== undefined ? String(entry.status) : '---';
+  // The URL stays uncoloured so it is easy to read and copy.
+  const field = (label: string, value: string, plainValue = false): string =>
+    `${paint(colour, label)} ${plainValue ? value : paint(colour, value)}`;
 
-  const lines = [`[api] ${head}`];
+  const lines: string[] = [paint(ANSI.bold + colour, banner.title)];
+
   if (entry.direction === 'request') {
-    if (entry.params !== undefined) lines.push(`     params   ${stringify(entry.params)}`);
-    if (entry.requestBody !== undefined) lines.push(`     body     ${stringify(entry.requestBody)}`);
+    lines.push(field('METHOD:', entry.method));
+    lines.push(field('URL:', entry.url, true));
+    if (entry.params !== undefined) lines.push(field('PARAMS:', stringify(entry.params)));
+    if (entry.requestBody !== undefined) lines.push(field('BODY:', stringify(entry.requestBody)));
+  } else if (entry.direction === 'response') {
+    lines.push(field('URL:', entry.url, true));
+    lines.push(field('STATUS:', status));
+    if (entry.responseBody !== undefined) lines.push(field('RESPONSE:', stringify(entry.responseBody)));
   } else {
-    if (entry.responseBody !== undefined) lines.push(`     response ${stringify(entry.responseBody)}`);
-    if (entry.error) {
-      if (entry.error.code) lines.push(`     code     ${entry.error.code}`);
-      if (entry.error.details !== undefined) lines.push(`     details  ${stringify(entry.error.details)}`);
-    }
+    lines.push(field('URL:', entry.url, true));
+    lines.push(field('STATUS:', status));
+    lines.push(
+      field(
+        'ERROR:',
+        stringify({
+          message: entry.error?.message,
+          code: entry.error?.code,
+          details: entry.error?.details,
+        }),
+      ),
+    );
   }
 
-  const [headline, ...details] = lines;
-  if (entry.direction === 'error') {
-    console.error(lines.join('\n'));
-  } else if (typeof console.groupCollapsed === 'function') {
-    console.groupCollapsed(headline);
-    for (const detail of details) console.log(detail);
-    console.groupEnd();
-  } else {
-    console.log(lines.join('\n'));
-  }
+  lines.push(paint(ANSI.bold + colour, banner.rule));
+
+  const block = lines.join('\n');
+  if (entry.direction === 'error') console.error(block);
+  else console.log(block);
 };
 
 const record = (entry: ApiLogEntry): ApiLogEntry => {
+  if (!IS_DEV) return entry;
   entries = [entry, ...entries].slice(0, MAX_ENTRIES);
   listeners.forEach((listener) => listener());
   print(entry);

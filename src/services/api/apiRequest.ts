@@ -2,7 +2,7 @@ import type { AxiosError, AxiosRequestConfig, Method } from 'axios';
 
 import { API_BASE_URL } from './apiHost';
 import { apiClient, USE_MOCK_DATA } from './apiClient';
-import { apiLogger } from './apiLogger';
+import { apiLogger, IS_DEV } from './apiLogger';
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
@@ -14,8 +14,6 @@ export interface ApiRequestConfig {
   body?: unknown;
   timeoutMs?: number;
   signal?: AbortSignal;
-  /** Overrides the logged label; useful to tell duplicate calls apart. */
-  label?: string;
 }
 
 export interface ApiRequestResult<T> {
@@ -148,10 +146,9 @@ const toApiError = (error: unknown, context: { method: string; url: string; dura
  */
 export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiRequestResult<T>> => {
   const method = (config.method ?? 'GET').toUpperCase();
-  const label = config.label ?? describeUrl(config.url, config.params);
   const startedAt = Date.now();
 
-  apiLogger.logRequest({ method, url: label, params: config.params, body: config.body });
+  apiLogger.logRequest({ method, url: config.url, params: config.params, body: config.body });
 
   const axiosConfig: AxiosRequestConfig = {
     ...(config.params ? { params: config.params } : {}),
@@ -166,7 +163,7 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiReques
 
     apiLogger.logResponse({
       method,
-      url: label,
+      url: config.url,
       status: response.status,
       statusText: response.statusText,
       durationMs,
@@ -195,7 +192,7 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiReques
 
     apiLogger.logError({
       method,
-      url: label,
+      url: config.url,
       durationMs: Date.now() - startedAt,
       status: apiError.status,
       statusText: apiError.statusText,
@@ -230,7 +227,7 @@ export const isNetworkError = (error: unknown): boolean =>
  * of quietly rendering fake data.
  */
 export const mockFallback = <T>(error: unknown, mock: T, label: string): T => {
-  if (USE_MOCK_DATA && isNetworkError(error)) {
+  if (IS_DEV && USE_MOCK_DATA && isNetworkError(error)) {
     console.warn(
       `[api] ${label}: cannot reach ${API_BASE_URL}, serving mock data because ` +
         'EXPO_PUBLIC_USE_MOCK_DATA=true. Unset it to see real API failures.',

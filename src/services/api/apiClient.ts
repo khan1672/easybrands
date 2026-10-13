@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_BASE_URL } from './apiHost';
+import { IS_DEV } from './apiLogger';
 
 /**
  * Production-only API client.
@@ -24,7 +25,10 @@ export const API_TIMEOUT_MS = 10000;
  */
 export const USE_MOCK_DATA = expoEnv?.EXPO_PUBLIC_USE_MOCK_DATA === 'true';
 
-console.log(`[api] base URL: ${API_BASE_URL} (mock data: ${USE_MOCK_DATA ? 'on' : 'off'})`);
+// Debug-only: confirms which API a dev build is pointed at.
+if (IS_DEV) {
+  console.log(`[api] base URL: ${API_BASE_URL} (mock data: ${USE_MOCK_DATA ? 'on' : 'off'})`);
+}
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

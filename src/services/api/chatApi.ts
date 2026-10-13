@@ -1,4 +1,5 @@
 import { API_BASE_URL } from './apiHost';
+import { apiLogger } from './apiLogger';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -92,8 +93,14 @@ export const streamChat = async (
 ): Promise<void> =>
   new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    const startedAt = Date.now();
     let buffer = '';
     let settled = false;
+    let streamedChars = 0;
+    let eventCount = 0;
+
+    // Streamed like every other call, so it shows in the same coloured console.
+    apiLogger.logRequest({ method: 'POST', url: '/chat', body: { messages } });
 
     const finish = (): void => {
       if (settled) return;
@@ -106,6 +113,13 @@ export const streamChat = async (
       if (settled) return;
       settled = true;
       signal?.removeEventListener('abort', onAbort);
+      apiLogger.logError({
+        method: 'POST',
+        url: '/chat',
+        durationMs: Date.now() - startedAt,
+        status: error.status,
+        error: { message: error.message, code: error.code },
+      });
       reject(error);
     };
 
@@ -120,17 +134,22 @@ export const streamChat = async (
       buffer = rest;
       for (const frame of frames) {
         const event = parseSseFrame(frame);
-        if (event) onEvent(event);
+        if (event) {
+          eventCount += 1;
+          onEvent(event);
+        }
       }
     };
 
     xhr.onprogress = () => {
       buffer = xhr.responseText ?? '';
+      streamedChars = buffer.length;
       drain();
     };
 
     xhr.onload = () => {
       buffer = xhr.responseText ?? '';
+      streamedChars = buffer.length;
       drain();
 
       const status = xhr.status;
@@ -150,6 +169,14 @@ export const streamChat = async (
         );
         return;
       }
+      apiLogger.logResponse({
+        method: 'POST',
+        url: '/chat',
+        status,
+        statusText: xhr.statusText,
+        durationMs: Date.now() - startedAt,
+        body: { events: eventCount, chars: streamedChars },
+      });
       finish();
     };
 
