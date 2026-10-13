@@ -156,6 +156,7 @@ export const SearchScreen: React.FC<Props> = ({ navigation }) => {
           placeholder={strings.searchPlaceholder}
           accessibilityLabel={strings.searchAccessibilityLabel}
           autoFocus
+          style={styles.searchInput}
         />
         {query.length > 0 ? (
           <Pressable
@@ -241,6 +242,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
+  },
+  searchInput: {
+    flex: 1,
   },
   clear: {
     minWidth: 44,

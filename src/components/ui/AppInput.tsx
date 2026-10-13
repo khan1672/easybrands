@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { AppText } from './AppText';
 import { colors } from '@theme/colors';
 import { radius } from '@theme/radius';
@@ -16,6 +17,8 @@ interface AppInputProps {
   /** Shown under the field in the error colour when the value is unusable. */
   errorText?: string;
   autoFocus?: boolean;
+  /** Sizes the field's container — e.g. `{ flex: 1 }` to fill a row. */
+  style?: StyleProp<ViewStyle>;
 }
 
 /**
@@ -32,9 +35,10 @@ export const AppInput: React.FC<AppInputProps> = ({
   accessibilityLabel,
   errorText,
   autoFocus,
+  style,
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       {label ? (
         <AppText variant="label" color={colors.textSecondary}>
           {label}
