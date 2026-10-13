@@ -1,12 +1,7 @@
 import type { AxiosError, AxiosRequestConfig, Method } from 'axios';
 
-import {
-  apiClient,
-  LAN_API_BASE_URL,
-  USE_MOCK_DATA,
-  markApiBaseUrlHealthy,
-  rotateApiBaseUrl,
-} from './apiClient';
+import { API_BASE_URL } from './apiHost';
+import { apiClient, USE_MOCK_DATA } from './apiClient';
 import { apiLogger } from './apiLogger';
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
@@ -106,7 +101,7 @@ const describeAxiosError = (error: AxiosError): { message: string; code?: string
   let message = data?.error?.message ?? statusText ?? error.message ?? 'Request failed';
   if (isTimeout) message = `Request timed out after ${error.config?.timeout ?? 0}ms`;
   else if (isNetworkError) {
-    message = `Network unreachable — is the API running and reachable at ${LAN_API_BASE_URL}?`;
+    message = `Network unreachable — could not reach ${API_BASE_URL}.`;
   } else if (status !== undefined) {
     message = `${status} ${statusText ?? ''}`.trim();
   }
@@ -187,47 +182,27 @@ export const apiRequest = async <T>(config: ApiRequestConfig): Promise<ApiReques
     };
   };
 
-  // A network-level failure usually means the Mac moved to a new DHCP address
-  // rather than the endpoint being wrong. Move to the next candidate host and
-  // retry once before reporting failure, so the app recovers without a rebuild.
-  let lastError: ApiError | null = null;
+  // Production is the only address, so a network failure is reported as-is
+  // rather than retried against another host.
   try {
-    const result = await runAttempt();
-    // Remember the candidate that answered, so a later failure rotates away
-    // from it and then comes back to it rather than to a dead address.
-    markApiBaseUrlHealthy();
-    return result;
+    return await runAttempt();
   } catch (error) {
-    lastError = toApiError(error, { method, url: config.url, durationMs: Date.now() - startedAt });
+    const apiError = toApiError(error, {
+      method,
+      url: config.url,
+      durationMs: Date.now() - startedAt,
+    });
 
-    if (lastError.isNetworkError) {
-      rotateApiBaseUrl();
-      lastError = null;
-      try {
-        const result = await runAttempt();
-        markApiBaseUrlHealthy();
-        return result;
-      } catch (retryError) {
-        lastError = toApiError(retryError, {
-          method,
-          url: config.url,
-          durationMs: Date.now() - startedAt,
-        });
-      }
-    }
+    apiLogger.logError({
+      method,
+      url: label,
+      durationMs: Date.now() - startedAt,
+      status: apiError.status,
+      statusText: apiError.statusText,
+      error: { message: apiError.message, code: apiError.code, details: apiError.details },
+    });
 
-    throw lastError;
-  } finally {
-    if (lastError) {
-      apiLogger.logError({
-        method,
-        url: label,
-        durationMs: Date.now() - startedAt,
-        status: lastError.status,
-        statusText: lastError.statusText,
-        error: { message: lastError.message, code: lastError.code, details: lastError.details },
-      });
-    }
+    throw apiError;
   }
 };
 
@@ -257,7 +232,7 @@ export const isNetworkError = (error: unknown): boolean =>
 export const mockFallback = <T>(error: unknown, mock: T, label: string): T => {
   if (USE_MOCK_DATA && isNetworkError(error)) {
     console.warn(
-      `[api] ${label}: cannot reach ${LAN_API_BASE_URL}, serving mock data because ` +
+      `[api] ${label}: cannot reach ${API_BASE_URL}, serving mock data because ` +
         'EXPO_PUBLIC_USE_MOCK_DATA=true. Unset it to see real API failures.',
     );
     return mock;

@@ -1,4 +1,4 @@
-import { currentApiBaseUrl } from './apiClient';
+import { API_BASE_URL } from './apiHost';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -162,7 +162,7 @@ export const streamChat = async (
     }
     signal?.addEventListener('abort', onAbort);
 
-    xhr.open('POST', `${currentApiBaseUrl()}/chat`);
+    xhr.open('POST', `${API_BASE_URL}/chat`);
     xhr.setRequestHeader('content-type', 'application/json');
     xhr.send(JSON.stringify({ messages }));
   });
