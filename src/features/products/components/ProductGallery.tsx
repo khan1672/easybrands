@@ -89,8 +89,9 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productN
         }}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        keyExtractor={item => item.url}
+        keyExtractor={(item, i) => `${item.url}-${i}`}
         showsHorizontalScrollIndicator={false}
+
         renderItem={({ item }) => (
           <View style={{ width }}>
             <Pressable
@@ -122,8 +123,9 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({ images, productN
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.thumbs}
-          keyExtractor={item => item.url}
+          keyExtractor={(item, i) => `${item.url}-${i}`}
           renderItem={({ item, index: i }) => (
+
             <Pressable
               onPress={() => {
                 setIndex(i);
