@@ -1,5 +1,6 @@
 import { API_BASE_URL } from './apiHost';
 import { apiLogger } from './apiLogger';
+import { APP_KEY, APP_KEY_HEADER, APP_SECRET, APP_SECRET_HEADER } from './apiKeys';
 
 export type ChatRole = 'user' | 'assistant';
 
@@ -191,6 +192,8 @@ export const streamChat = async (
 
     xhr.open('POST', `${API_BASE_URL}/chat`);
     xhr.setRequestHeader('content-type', 'application/json');
+    xhr.setRequestHeader(APP_KEY_HEADER, APP_KEY);
+    xhr.setRequestHeader(APP_SECRET_HEADER, APP_SECRET);
     xhr.send(JSON.stringify({ messages }));
   });
 

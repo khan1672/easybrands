@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from './apiHost';
 import { IS_DEV } from './apiLogger';
+import { APP_KEY, APP_KEY_HEADER, APP_SECRET, APP_SECRET_HEADER } from './apiKeys';
 
 /**
  * Production-only API client.
@@ -33,7 +34,12 @@ if (IS_DEV) {
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT_MS,
-  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    [APP_KEY_HEADER]: APP_KEY,
+    [APP_SECRET_HEADER]: APP_SECRET,
+  },
 });
 
 type AuthTokenProvider = () => string | null | Promise<string | null>;
