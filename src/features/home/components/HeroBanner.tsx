@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppButton, AppImage, AppText } from '@components/ui';
+import { AppImage, AppText } from '@components/ui';
 import { colors } from '@theme/colors';
 import { dimensions } from '@theme/dimensions';
 import { radius } from '@theme/radius';
@@ -12,7 +12,7 @@ interface HeroBannerProps {
   onCtaPress: () => void;
 }
 
-export const HeroBannerView: React.FC<HeroBannerProps> = ({ banner, onCtaPress }) => {
+export const HeroBannerView: React.FC<HeroBannerProps> = ({ banner }) => {
   return (
     <View style={styles.root}>
       <AppImage
@@ -27,9 +27,9 @@ export const HeroBannerView: React.FC<HeroBannerProps> = ({ banner, onCtaPress }
         <AppText variant="bodySmall" color={colors.textInverse} style={styles.subtitle}>
           {banner.subtitle}
         </AppText>
-        <View style={styles.cta}>
+        {/* <View style={styles.cta}>
           <AppButton label={banner.ctaLabel} variant="inverse" onPress={onCtaPress} />
-        </View>
+        </View> */}
       </View>
     </View>
   );
